@@ -866,6 +866,60 @@ def add_17th_province_summary(story, st):
                            ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
     story.append(t)
 
+def add_16th_national_summary(story, st):
+    story.append(Paragraph("第16届国赛题目完整结构", st['sub_title']))
+    story.append(Paragraph("第16届国赛题不是单一外设题，而是“动态数据采集 + 算法处理 + 显示交互 + 串口上报”的综合系统题。纸质手册复盘时要先抓住系统边界，再看四个算法细节。", st['body']))
+    overview = [
+        [Paragraph("模块", st['th']), Paragraph("题目要求", st['th']), Paragraph("工程实现抓手", st['th'])],
+        [Paragraph("硬件资源", st['td']), Paragraph("50MHz时钟、复位、2个4位8段数码管、4个独立按键、LED、USB转串口、DS1302、ADC081C021", st['td_l']), Paragraph("顶层端口先按CT137X引脚表固定，RTC提供时间戳，ADC提供0-127采样值。", st['td_l'])],
+        [Paragraph("性能", st['td']), Paragraph("按键响应小于等于0.1秒；至少支持16个数据输入；数码管稳定无重影", st['td_l']), Paragraph("按键用10ms/20ms消抖；数据数组按至少16深度设计；数码管1kHz左右扫描。", st['td_l'])],
+        [Paragraph("数据录入", st['td']), Paragraph("ADC把0-3.3V映射为0-127，S1触发录入当前转换值", st['td_l']), Paragraph("ADC持续刷新current_adc，S1脉冲把current_adc写入data_mem[wr_ptr]并记录RTC时间。", st['td_l'])],
+        [Paragraph("算法", st['td']), Paragraph("极值统计、无损压缩、滑动平均滤波、最大-最小归一化", st['td_l']), Paragraph("S4启动多拍计算状态机；每个时钟处理一个元素，完成后置done并进入结果界面。", st['td_l'])],
+        [Paragraph("显示", st['td']), Paragraph("录入界面显示界面标识、最近录入值、当前ADC值；结果界面显示算法结果", st['td_l']), Paragraph("显示控制单独写成display_mux，按界面状态和算法编号选择8位数码管内容。", st['td_l'])],
+        [Paragraph("串口", st['td']), Paragraph("115200/8N1字符串输出；录入数据和算法结果带时间戳", st['td_l']), Paragraph("先把结果格式化为ASCII缓冲区，再由uart_string_sender逐字节发送。", st['td_l'])],
+    ]
+    t = Table(overview, colWidths=[2.3*cm, 6.3*cm, 6.4*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(t)
+
+    story.append(Paragraph("界面与按键功能速查", st['sub_title']))
+    keys = [
+        [Paragraph("按键", st['th']), Paragraph("录入界面", st['th']), Paragraph("结果界面", st['th']), Paragraph("设计注意", st['th'])],
+        [Paragraph("S1", st['td']), Paragraph("录入当前ADC数字量", st['td_l']), Paragraph("无定义，保持当前状态", st['td_l']), Paragraph("只响应消抖后的单周期脉冲。", st['td_l'])],
+        [Paragraph("S2", st['td']), Paragraph("切换算法：A1极值、A2压缩、A3滤波、A4归一化", st['td_l']), Paragraph("任意界面下有效，循环切换算法", st['td_l']), Paragraph("算法编号和显示标识必须同步更新。", st['td_l'])],
+        [Paragraph("S3", st['td']), Paragraph("串口输出当前已录入数据", st['td_l']), Paragraph("切换显示当前算法的下一条结果", st['td_l']), Paragraph("录入上报和结果翻页是同一个按键的两种语义。", st['td_l'])],
+        [Paragraph("S4", st['td']), Paragraph("按当前算法执行计算并更新结果", st['td_l']), Paragraph("清除录入数据和计算结果，返回录入界面", st['td_l']), Paragraph("清零时要同时清wr_ptr、result_ptr和done标志。", st['td_l'])],
+        [Paragraph("RESET", st['td']), Paragraph("全局复位", st['td_l']), Paragraph("全局复位", st['td_l']), Paragraph("恢复初始状态，界面回录入界面。", st['td_l'])],
+    ]
+    t = Table(keys, colWidths=[1.6*cm, 4.4*cm, 4.4*cm, 4.6*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(t)
+
+    story.append(Paragraph("串口上报格式", st['sub_title']))
+    uart = [
+        [Paragraph("类型", st['th']), Paragraph("触发条件", st['th']), Paragraph("格式", st['th']), Paragraph("例子/说明", st['th'])],
+        [Paragraph("录入数据上报", st['td']), Paragraph("录入界面按S3", st['td_l']), Paragraph("[时间戳][数值][时间戳][数值]...", st['td_l']), Paragraph("时间戳来自每个数值的录入时间。", st['td_l'])],
+        [Paragraph("极值统计", st['td']), Paragraph("S4计算完成", st['td_l']), Paragraph("[时间戳][A1][(最小值,位置),(最大值,位置)]", st['td_l']), Paragraph("例：[145643][A1][(8,6),(99,3)]", st['td_l'])],
+        [Paragraph("无损压缩", st['td']), Paragraph("S4计算完成", st['td_l']), Paragraph("[时间戳][A2][(数值,游程长度),数值...]", st['td_l']), Paragraph("游程长度>=2输出二元组，否则输出单值。", st['td_l'])],
+        [Paragraph("滑动平均", st['td']), Paragraph("S4计算完成", st['td_l']), Paragraph("[时间戳][A3][滤波结果序列]", st['td_l']), Paragraph("窗口固定为3，输出长度为N-2。", st['td_l'])],
+        [Paragraph("归一化", st['td']), Paragraph("S4计算完成", st['td_l']), Paragraph("[时间戳][A4][0.xx结果序列]", st['td_l']), Paragraph("定点放大100倍实现两位小数。", st['td_l'])],
+    ]
+    t = Table(uart, colWidths=[2.2*cm, 3*cm, 5.4*cm, 4.4*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(t)
+
+    story.append(Paragraph("推荐顶层状态划分", st['sub_title']))
+    add_paras(story, [
+        "建议至少拆成三个互不混乱的控制状态机：界面状态机负责INPUT/RESULT两个界面；算法状态机负责IDLE/CALC/DONE；串口状态机负责IDLE/FORMAT/SEND。不要让一个always块同时处理按键、算法循环、数码管和UART，否则调试时很难判断是哪一层出错。",
+        "赛场实现时，先保证S1录入、数码管显示ADC和已录入值，再接入S2算法编号，随后实现S4计算，最后补S3串口上报。这个顺序能保证每一步都有可观察输出，不会在最后集成时一次暴露太多问题。"
+    ], st)
+
 # ==================== 真题实战章节 ====================
 def build_chapter3(st, base_dir=None):
     story = []
@@ -967,6 +1021,7 @@ SCL:       _|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_
     story.append(Paragraph("3.4  第16届蓝桥杯FPGA国赛算法拆解", st['sec_title']))
     story.append(Paragraph("基于FPGA设计动态数据采集系统：ADC产生128个数字量，按键触发录入，集成极值统计、"
                            "无损压缩、滑动平均滤波、归一化四种算法，数码管显示结果，串口上报数据。", st['body']))
+    add_16th_national_summary(story, st)
     add_paras(story, [
         "这类综合题不要先写顶层，而要先把系统分成“采集、存储、计算、显示、上报”五个可验证模块。ADC模块持续刷新当前电压对应的0到127数字量；S1只在按键脉冲到来时把当前ADC值写入数组，同时记录RTC时间戳；S2只改变当前算法编号；S4触发计算状态机；S3根据当前界面选择串口上报或结果翻页。",
         "数据量至少16个，题目又要求支持128个数字量范围，所以存储宽度可按7位或8位设计。为了简化串口格式化，内部通常用8位保存采样值，用额外计数器保存已录入数量。算法计算不要在一个时钟里写完所有循环，应该设计为多拍扫描状态机：每个时钟处理一个元素，处理完后置done标志。"
