@@ -284,6 +284,7 @@ def build_front_matter(st):
     t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
                            ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
                            ('TOPPADDING', (0,0), (-1,-1), 4), ('BOTTOMPADDING', (0,0), (-1,-1), 4)]))
+    story.append(table_caption(st, "纸质使用建议"))
     story.append(t)
 
     story.append(Paragraph("零基础14天学习路线", st['sec_title']))
@@ -300,6 +301,7 @@ def build_front_matter(st):
     t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
                            ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
                            ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(table_caption(st, "零基础14天学习路线"))
     story.append(t)
     story.append(PageBreak())
 
@@ -325,6 +327,7 @@ def build_front_matter(st):
     t.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('LEFTPADDING', (0,0), (-1,-1), 3),
                            ('RIGHTPADDING', (0,0), (-1,-1), 3), ('TOPPADDING', (0,0), (-1,-1), 3),
                            ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(table_caption(st, "赛场速查卡"))
     story.append(t)
     story.append(PageBreak())
     return story
@@ -706,6 +709,7 @@ def build_chapter1(st):
         ('TOPPADDING', (0,0), (-1,-1), 3),
         ('BOTTOMPADDING', (0,0), (-1,-1), 3),
     ]))
+    story.append(table_caption(st, "I2C设备地址表"))
     story.append(t)
 
     story.append(ChapterMarker("ch1_4", chapter_pages))
@@ -734,6 +738,7 @@ def build_chapter1(st):
         ('TOPPADDING', (0,0), (-1,-1), 2),
         ('BOTTOMPADDING', (0,0), (-1,-1), 2),
     ]))
+    story.append(table_caption(st, "数码管段码表（共阳极）"))
     story.append(t)
 
     story.append(ChapterMarker("ch1_5", chapter_pages))
@@ -756,6 +761,7 @@ def build_chapter1(st):
         ('TOPPADDING', (0,0), (-1,-1), 3),
         ('BOTTOMPADDING', (0,0), (-1,-1), 3),
     ]))
+    story.append(table_caption(st, "电源配置"))
     story.append(t)
     story.append(Paragraph("<b>重要：</b>所有IO Bank均为3.3V，Vivado中必须设置IOSTANDARD为LVCMOS33。", st['tip']))
     story.append(PageBreak())
@@ -812,6 +818,7 @@ set_property -dict {PACKAGE_PIN M4 IOSTANDARD LVCMOS33} [get_ports {key[1]}]  # 
         ('TOPPADDING', (0,0), (-1,-1), 3),
         ('BOTTOMPADDING', (0,0), (-1,-1), 3),
     ]))
+    story.append(table_caption(st, "Vivado工程创建流程"))
     story.append(t)
     story.append(Paragraph("<b>赛场原则：</b>不要一上来就把所有模块接进顶层。先建立能综合、能下载、能看到LED变化的最小工程，再逐个接外设。每接入一个外设，都保留一个可观察输出作为验收点。", st['tip']))
 
@@ -840,6 +847,7 @@ set_property -dict {PACKAGE_PIN M4 IOSTANDARD LVCMOS33} [get_ports {key[1]}]  # 
         ('TOPPADDING', (0,0), (-1,-1), 2),
         ('BOTTOMPADDING', (0,0), (-1,-1), 2),
     ]))
+    story.append(table_caption(st, "完整引脚映射表"))
     story.append(t)
     story.append(Paragraph("完整约束见CT137X_full_template.xdc，使用智能proc自动匹配多种端口命名。", st['tip']))
     story.append(PageBreak())
@@ -917,6 +925,7 @@ def add_17th_province_summary(story, st):
     t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
                            ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
                            ('TOPPADDING', (0,0), (-1,-1), 4), ('BOTTOMPADDING', (0,0), (-1,-1), 4)]))
+    story.append(table_caption(st, "第17届省赛题目摘要"))
     story.append(t)
     states = [
         [Paragraph("状态", st['th']), Paragraph("进入/保持条件", st['th']), Paragraph("动作", st['th'])],
@@ -932,6 +941,39 @@ def add_17th_province_summary(story, st):
     t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
                            ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
                            ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(table_caption(st, "程序设计题FSM速查"))
+    story.append(t)
+
+def add_exam_training_index(story, st):
+    story.append(Paragraph("真题训练索引与错题复盘表", st['sub_title']))
+    story.append(Paragraph("扫描题面已经完整保留在后续页面。纸质训练时先看本表，知道每组题对应哪些知识点；做完后把错因写在题号旁，再回到对应章节补知识。", st['body']))
+    rows = [
+        [Paragraph("题面", st['th']), Paragraph("重点知识点", st['th']), Paragraph("错题回看位置", st['th'])],
+        [Paragraph("第16届省赛真题", st['td']), Paragraph("逻辑门、D触发器、PLL、Verilog基础、FPGA资源", st['td_l']), Paragraph("第三章数字系统设计、第二章约束、第四章基础驱动", st['td_l'])],
+        [Paragraph("第17届省赛客观题", st['td']), Paragraph("FPGA资源、复位、SPI、移位寄存器、差分信号、RS-232、I2C吞吐、亚稳态", st['td_l']), Paragraph("第三章协议与亚稳态、赛场速查卡", st['td_l'])],
+        [Paragraph("第17届省赛设计题", st['td']), Paragraph("串行工序FSM、ADC阈值、倒计时、按键、LED、数码管", st['td_l']), Paragraph("第三章FSM拆解、第五章top结构", st['td_l'])],
+        [Paragraph("十六届模拟I/II/III", st['td']), Paragraph("Verilog声明、组合/时序逻辑、工程流程、状态机和接口概念", st['td_l']), Paragraph("零基础学习路线、第三章核心原理", st['td_l'])],
+        [Paragraph("十七届模拟I/II/III", st['td']), Paragraph("同步复位、有符号位宽、always敏感列表、外设控制、综合常识", st['td_l']), Paragraph("第三章设计方法、第四章驱动源码", st['td_l'])],
+    ]
+    t = Table(rows, colWidths=[3.3*cm, 6.7*cm, 5*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(table_caption(st, "真题训练索引与错题复盘"))
+    story.append(t)
+    review = [
+        [Paragraph("错因", st['th']), Paragraph("典型表现", st['th']), Paragraph("修正动作", st['th'])],
+        [Paragraph("概念不清", st['td']), Paragraph("能选答案但说不出原因", st['td_l']), Paragraph("回到对应协议/状态机小节，用一句话解释规则。", st['td_l'])],
+        [Paragraph("时序错误", st['td']), Paragraph("仿真能跑，板上偶发错误", st['td_l']), Paragraph("检查同步器、消抖、计数边界、状态跳转条件。", st['td_l'])],
+        [Paragraph("极性错误", st['td']), Paragraph("LED/数码管/按键表现相反", st['td_l']), Paragraph("查CT137X引脚表和原理图，确认低有效或高有效。", st['td_l'])],
+        [Paragraph("接口混淆", st['td']), Paragraph("把I2C ACK、SPI片选、UART帧格式混在一起", st['td_l']), Paragraph("画出一帧时序，标出谁驱动线、谁采样线。", st['td_l'])],
+    ]
+    story.append(Paragraph("错题复盘模板", st['sub_title']))
+    t = Table(review, colWidths=[2.6*cm, 5.4*cm, 7*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(table_caption(st, "错题复盘模板"))
     story.append(t)
 
 def add_16th_national_summary(story, st):
@@ -950,6 +992,7 @@ def add_16th_national_summary(story, st):
     t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
                            ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
                            ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(table_caption(st, "第16届国赛模块与要求"))
     story.append(t)
 
     story.append(Paragraph("界面与按键功能速查", st['sub_title']))
@@ -965,6 +1008,7 @@ def add_16th_national_summary(story, st):
     t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
                            ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
                            ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(table_caption(st, "界面与按键功能速查"))
     story.append(t)
 
     story.append(Paragraph("串口上报格式", st['sub_title']))
@@ -980,6 +1024,7 @@ def add_16th_national_summary(story, st):
     t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
                            ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
                            ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(table_caption(st, "串口上报格式"))
     story.append(t)
 
     story.append(Paragraph("推荐顶层状态划分", st['sub_title']))
@@ -1060,6 +1105,7 @@ SCL:       _|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_
     t = Table(spi_tbl, colWidths=[2*cm, 2*cm, 2*cm, 3*cm, 3*cm])
     t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
                            ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('ALIGN', (0,0), (-1,-1), 'CENTER')]))
+    story.append(table_caption(st, "SPI模式配置"))
     story.append(t)
 
     story.append(ChapterMarker("ch3_3", chapter_pages))
@@ -1153,6 +1199,7 @@ SCL:       _|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_
         story.append(Paragraph(summaries.get(exam_name, "扫描题面页。"), st['desc_box']))
         for idx, img_path in enumerate(pages, 1):
             story.append(Paragraph(f"题面页 {idx}/{len(pages)}", st['sub_title']))
+            story.append(figure_caption(st, "题面页"))
             add_exam_image(story, img_path, st)
             if idx != len(pages):
                 story.append(PageBreak())
@@ -1214,6 +1261,7 @@ def build_appendix(st):
         ('ALIGN', (0,0), (-1,-1), 'CENTER'), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3),
     ]))
+    story.append(table_caption(st, "DS1302寄存器地址表"))
     story.append(t)
     story.append(Spacer(1, 5*mm))
 
@@ -1235,6 +1283,7 @@ def build_appendix(st):
         ('ALIGN', (0,0), (-1,-1), 'CENTER'), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3),
     ]))
+    story.append(table_caption(st, "W25Q128 SPI命令表"))
     story.append(t)
 
     story.append(Spacer(1, 5*mm))
@@ -1261,6 +1310,7 @@ def build_appendix(st):
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3),
     ]))
+    story.append(table_caption(st, "官方资料依据速查"))
     story.append(t)
 
     story.append(Paragraph("D. CT137X关键硬件事实", st['sec_title']))
@@ -1284,10 +1334,31 @@ def build_appendix(st):
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3),
     ]))
+    story.append(table_caption(st, "CT137X关键硬件事实"))
     story.append(t)
 
     story.append(Spacer(1, 2*cm))
     story.append(DecorLine(color=C['muted'], thickness=0.5))
+
+    # ==================== 参考文献 ====================
+    story.append(Spacer(1, 8*mm))
+    story.append(Paragraph("参考文献", st['sec_title']))
+    refs = [
+        "1. Xilinx. 7 Series FPGAs Data Sheet: Overview (DS180).",
+        "2. Xilinx. Spartan-7 FPGA Packaging and Pinout (UG475).",
+        "3. 四梯科技. CT137X FPGA竞赛实训平台用户手册 (CT137X_UM.pdf).",
+        "4. 四梯科技. CT137X引脚分配表 (CT137X_PIN.pdf).",
+        "5. 四梯科技. CT137X原理图 (CT137X_SCH.pdf).",
+        "6. Texas Instruments. ADC081C021 8-Bit ADC with ALERT Data Sheet.",
+        "7. Texas Instruments. DAC5571 8-Bit DAC Data Sheet.",
+        "8. Microchip. AT24C02 2Kbit EEPROM Data Sheet.",
+        "9. Maxim Integrated. DS1302 Trickle Charge Timekeeping Chip Data Sheet.",
+        "10. ISSI. IS63WV1288 128Kx8 Low Power SRAM Data Sheet.",
+        "11. Winbond. W25Q128FV 128Mbit SPI Flash Data Sheet.",
+        "12. 蓝桥杯大赛组委会. 第16/17届蓝桥杯FPGA省赛/国赛真题.",
+    ]
+    for ref in refs:
+        story.append(Paragraph(ref, st['body']))
     story.append(Paragraph("© 2026 极道工作室 · JIDAO STUDIO · 版权所有", ParagraphStyle('CR', fontName='MSYH', fontSize=9, alignment=TA_CENTER, textColor=C['muted'])))
     return story
 
@@ -1327,6 +1398,9 @@ def main():
     print(f"Pass 1 done, page map: {chapter_pages}")
 
     # ========== 第二遍：带页码的目录 + 正文 ==========
+    global table_counter, figure_counter
+    table_counter = 0
+    figure_counter = 0
     final_story = []
     final_story.extend(build_cover(st))
     final_story.extend(build_front_matter(st))
