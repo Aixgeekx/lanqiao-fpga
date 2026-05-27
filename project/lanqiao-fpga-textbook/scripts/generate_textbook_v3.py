@@ -6,17 +6,19 @@
 """
 
 import os
+import re
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm, cm
 from reportlab.lib.colors import HexColor, black, white
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    PageBreak, Preformatted, KeepTogether, Flowable
+    PageBreak, Preformatted, KeepTogether, Flowable, Image as RLImage
 )
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from PIL import Image as PILImage
 
 # ==================== 颜色主题 ====================
 C = {
@@ -93,6 +95,7 @@ def S():
     s['th'] = ParagraphStyle('TH', fontName='SimHei', fontSize=8, textColor=white, alignment=TA_CENTER)
     s['td'] = ParagraphStyle('TD', fontName='MSYH', fontSize=7.5, textColor=C['text'], alignment=TA_CENTER)
     s['td_l'] = ParagraphStyle('TDL', fontName='MSYH', fontSize=7.5, textColor=C['text'], alignment=TA_LEFT)
+    s['caption'] = ParagraphStyle('CAP', fontName='MSYH', fontSize=7.5, leading=10, textColor=C['text_light'], alignment=TA_CENTER, spaceBefore=1*mm, spaceAfter=1.5*mm)
     # 目录
     s['toc_title'] = ParagraphStyle('TOCT', fontName='SimHei', fontSize=22, alignment=TA_CENTER, textColor=C['primary'], spaceBefore=8*mm, spaceAfter=8*mm)
     s['toc_ch'] = ParagraphStyle('TOCCH', fontName='SimHei', fontSize=11, textColor=C['primary'], spaceBefore=4*mm, spaceAfter=1*mm)
@@ -156,9 +159,25 @@ def cover_header_footer(canvas, doc):
     pass
 
 # ==================== 读取Verilog文件 ====================
+MODULE_ORDER = {
+    'driver': [
+        'key_ctrl.v', 'led_display.v', 'frequency_driver.v', 'iic_drive.v',
+        'adc_ctrl.v', 'dac_ctrl.v', 'eeprom_read_ctrl.v', 'eeprom_write_ctrl.v',
+        'uart_tx.v', 'uart_rx.v', 'spi_master.v', 'ds1302_wr_drive.v',
+        'ds1302_io_convert.v', 'sram_ctrl.v', 'w25q128_ctrl.v', 'seg_driver.v'
+    ],
+    'user': [
+        'led_proc.v', 'key_proc.v', 'uart_parser.v', 'uart_string_sender.v',
+        'seg_proc.v', 'ds1302_test.v', 'top_board.v', 'top.v'
+    ],
+}
+
 def read_verilog(folder):
     files = []
-    for f in sorted(os.listdir(folder)):
+    folder_key = os.path.basename(folder).lower()
+    order = {name: idx for idx, name in enumerate(MODULE_ORDER.get(folder_key, []))}
+    names = sorted(os.listdir(folder), key=lambda name: (order.get(name, 999), name))
+    for f in names:
         if f.endswith('.v'):
             with open(os.path.join(folder, f), 'r', encoding='utf-8') as fh:
                 files.append((f, fh.read()))
@@ -232,10 +251,12 @@ def build_toc(st):
         ("ch2",  "第二章  引脚约束与配置", True),
         ("ch2_1","2.1  XDC约束文件说明", False),
         ("ch2_2","2.2  完整引脚映射表", False),
-        ("ch3",  "第三章  真题实战与算法模块", True),
-        ("ch3_1","3.1  第16届国赛题目要求", False),
-        ("ch3_2","3.2  四大算法模块详解", False),
-        ("ch3_3","3.3  串口通信格式", False),
+        ("ch3",  "第三章  核心原理与真题实战", True),
+        ("ch3_1","3.1  数字系统设计方法", False),
+        ("ch3_2","3.2  I2C/UART/SPI通信协议", False),
+        ("ch3_3","3.3  板载外设时序原理", False),
+        ("ch3_4","3.4  第16届国赛算法拆解", False),
+        ("ch3_5","3.5  全部真题与模拟题题面", False),
         ("ch4",  "第四章  Driver 驱动模块详解", True),
         ("ch4_1","4.1   key_ctrl.v — 按键消抖", False),
         ("ch4_2","4.2   led_display.v — LED驱动", False),
@@ -700,21 +721,148 @@ set_property -dict {PACKAGE_PIN M4 IOSTANDARD LVCMOS33} [get_ports {key[1]}]  # 
     story.append(PageBreak())
     return story
 
+def add_paras(story, paras, st, style='body'):
+    for para in paras:
+        story.append(Paragraph(para, st[style]))
+
+def safe_xml(text):
+    return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+def exam_image_groups(base_dir):
+    img_dir = os.path.join(base_dir, "真题模拟题", "extracted_images")
+    if not os.path.isdir(img_dir):
+        return []
+    groups = {}
+    for name in os.listdir(img_dir):
+        if name.lower().endswith(".png"):
+            key = re.sub(r"_page\d+\.png$", "", name)
+            groups.setdefault(key, []).append(os.path.join(img_dir, name))
+    def page_no(path):
+        m = re.search(r"_page(\d+)\.png$", os.path.basename(path))
+        return int(m.group(1)) if m else 0
+    order = [
+        "第十六届 蓝桥杯（电子类）FPGA设计与开发省赛真题",
+        "十六届蓝桥杯FPGA模拟试题I",
+        "十六届蓝桥杯FPGA模拟试题Ⅱ",
+        "十六届蓝桥杯FPGA模拟试题Ⅲ",
+        "第十七届FPGA模拟考试Ⅰ",
+        "第十七届FPGA模拟考试Ⅱ",
+    ]
+    return [(name, sorted(groups[name], key=page_no)) for name in order if name in groups]
+
+def add_exam_image(story, path, st):
+    with PILImage.open(path) as img:
+        w, h = img.size
+    max_w, max_h = 16.2*cm, 21.5*cm
+    scale = min(max_w / w, max_h / h)
+    story.append(RLImage(path, width=w*scale, height=h*scale))
+    story.append(Paragraph(os.path.basename(path), st['caption']))
+
 # ==================== 真题实战章节 ====================
-def build_chapter3(st):
+def build_chapter3(st, base_dir=None):
     story = []
     story.append(ChapterMarker("ch3", chapter_pages))
-    story.append(Paragraph("第三章  真题实战与算法模块", st['ch_title']))
+    story.append(Paragraph("第三章  核心原理与真题实战", st['ch_title']))
     story.append(DecorLine())
     story.append(Spacer(1, 3*mm))
 
     story.append(ChapterMarker("ch3_1", chapter_pages))
-    story.append(Paragraph("3.1  第16届蓝桥杯FPGA国赛要求", st['sec_title']))
-    story.append(Paragraph("基于FPGA设计动态数据采集系统：ADC产生128个数字量，按键触发录入，集成极值统计、"
-                           "无损压缩、滑动平均滤波、归一化四种算法，数码管显示结果，串口上报数据。", st['body']))
+    story.append(Paragraph("3.1  数字系统设计方法", st['sec_title']))
+    add_paras(story, [
+        "FPGA不是按顺序执行程序的单片机，而是在芯片内部生成真实的并行数字电路。Verilog代码中的每个寄存器、组合表达式和状态机，综合后都会变成触发器、查找表、连线和片上存储资源。因此读题时不能只问“这段程序怎么跑”，而要问“这条数据通路在哪里、寄存器什么时候更新、控制信号由哪个状态产生”。",
+        "竞赛工程最稳的拆法是五层：输入采样层负责按键、串口、ADC等异步或低速输入；时序控制层负责分频、计数和状态机；数据存储层负责寄存器数组、SRAM或Flash；算法层负责最大最小、滤波、压缩等计算；显示输出层负责数码管、LED和UART上报。这样拆分后，单个模块容易仿真，也便于在赛场上快速定位问题。",
+        "状态机是FPGA控制逻辑的核心。三段式状态机把“当前状态寄存器”“下一状态判断”“输出控制”分开写，优点是波形清楚、组合环路风险低、综合结果稳定。Moore型状态机的输出只取决于当前状态，输出更稳；Mealy型状态机的输出同时取决于状态和输入，响应更快但更容易产生毛刺。竞赛中外设时序优先用Moore，按键触发或握手响应可适当使用Mealy。",
+        "亚稳态来自跨时钟域或异步输入。例如UART_RX、按键和外部IO都不一定和50MHz系统时钟对齐，信号刚好在采样边沿附近变化时，触发器可能短时间处于不确定电平。工程上常用两级同步器：第一级承担亚稳态风险，第二级输出给后续逻辑，虽然不能把风险降为零，但能把故障概率降到工程可接受范围。",
+        "机械按键不是理想开关，按下和松开时金属触点会抖动，持续时间通常为几毫秒到十几毫秒。如果直接用50MHz采样，一个按键动作可能被识别成很多次。常见做法是先分频到100Hz或50Hz，相当于每10ms或20ms采样一次；只有相邻采样值稳定变化时，才输出一个系统可识别的单周期按下脉冲。"
+    ], st)
+    story.append(Paragraph("三段式状态机模板", st['sub_title']))
+    story.append(Preformatted("""// 1. 当前状态寄存器：只在时钟边沿更新
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) state <= IDLE;
+    else        state <= next_state;
+end
+
+// 2. 下一状态组合逻辑：根据当前状态和输入决定跳转
+always @(*) begin
+    next_state = state;
+    case (state)
+        IDLE: if (start) next_state = WORK;
+        WORK: if (done)  next_state = IDLE;
+    endcase
+end
+
+// 3. 输出逻辑：把控制信号集中在状态含义里
+always @(*) begin
+    wr_en = (state == WORK);
+end""", st['code']))
 
     story.append(ChapterMarker("ch3_2", chapter_pages))
-    story.append(Paragraph("3.2  四大算法模块", st['sec_title']))
+    story.append(Paragraph("3.2  I2C/UART/SPI通信协议", st['sec_title']))
+    story.append(Paragraph("I2C协议", st['sub_title']))
+    add_paras(story, [
+        "I2C用SCL和SDA两根线连接多个器件。两根线空闲时都被上拉为高电平，任何器件只能主动拉低，不能主动输出高电平，所以多个器件共享总线时不会直接短路。CT137X上的ADC081C021、DAC5571和AT24C02 EEPROM共用同一组I2C引脚，靠7位器件地址区分目标设备。",
+        "一次I2C传输从起始条件开始：SCL保持高电平时，SDA从高变低。随后主机发送7位地址和1位读写方向位，方向位为0表示写，为1表示读。每发送8位数据后，第9个时钟是应答位，接收方把SDA拉低表示ACK；如果SDA保持高电平，则表示NACK，通常代表器件不存在、忙或不接受更多数据。",
+        "I2C时序最容易错的地方是SDA变化时机。规则是：SCL高电平期间SDA必须稳定，SCL低电平期间才允许改变数据；只有起始和停止条件例外。因此驱动中通常在SCL低电平的1/4周期更新SDA，在SCL高电平的3/4周期采样SDA。"
+    ], st)
+    story.append(Preformatted("""I2C字节传输：
+SDA: START A6 A5 A4 A3 A2 A1 A0 R/W ACK D7 ... D0 ACK STOP
+SCL:       _|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_
+规则：SCL高电平采样，SCL低电平改变SDA。""", st['code']))
+    story.append(Paragraph("UART协议", st['sub_title']))
+    add_paras(story, [
+        "UART是异步串口，没有专用时钟线，发送端和接收端必须约定同一个波特率。常见配置115200/8N1表示每秒115200个符号，8个数据位，无校验位，1个停止位。线路空闲为高电平，一帧数据以低电平起始位开始，随后按低位在前发送8位数据，最后用高电平停止位结束。",
+        "在50MHz系统时钟下，115200波特率对应的计数值约为50_000_000 / 115200 = 434。发送模块每计满434个系统时钟切换到下一位；接收模块检测到下降沿后，先等半个波特周期在起始位中间确认，再每隔一个波特周期采样数据位，这样能避开边沿抖动。"
+    ], st)
+    story.append(Preformatted("""UART 8N1帧：
+空闲  起始位  bit0 bit1 bit2 bit3 bit4 bit5 bit6 bit7  停止位
+  1      0      LSB ---------------------------> MSB     1""", st['code']))
+    story.append(Paragraph("SPI协议", st['sub_title']))
+    add_paras(story, [
+        "SPI是主从式同步总线，主机控制CS片选和SCLK时钟，MOSI负责主机到从机，MISO负责从机到主机。和UART不同，SPI每一位都跟随SCLK边沿移动，因此速率可以更高，时序也更直接。标准SPI在发送MOSI的同时采样MISO，所以天然支持全双工。",
+        "CPOL决定SCLK空闲电平，CPHA决定第几个边沿采样。CPOL=0时空闲低，CPOL=1时空闲高；CPHA=0表示第一个有效边沿采样，CPHA=1表示第二个有效边沿采样。主从双方的CPOL/CPHA必须一致，否则会出现整体位移一位或采样到错误数据。",
+        "DS1302常被称为类SPI器件，但它不是标准四线SPI：它使用CE、SCLK和单根双向DATA，且数据位序通常是LSB first。工程中可先用通用SPI主机产生时钟和移位，再通过ds1302_io_convert模块处理三态方向、CE极性和位序翻转。"
+    ], st)
+    spi_tbl = [[Paragraph(x, st['th']) for x in ["模式", "CPOL", "CPHA", "空闲时钟", "采样边沿"]],
+               [Paragraph(x, st['td']) for x in ["0", "0", "0", "低", "第1边沿"]],
+               [Paragraph(x, st['td']) for x in ["1", "0", "1", "低", "第2边沿"]],
+               [Paragraph(x, st['td']) for x in ["2", "1", "0", "高", "第1边沿"]],
+               [Paragraph(x, st['td']) for x in ["3", "1", "1", "高", "第2边沿"]]]
+    t = Table(spi_tbl, colWidths=[2*cm, 2*cm, 2*cm, 3*cm, 3*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('ALIGN', (0,0), (-1,-1), 'CENTER')]))
+    story.append(t)
+
+    story.append(ChapterMarker("ch3_3", chapter_pages))
+    story.append(Paragraph("3.3  板载外设时序原理", st['sec_title']))
+    story.append(Paragraph("数码管动态扫描", st['sub_title']))
+    add_paras(story, [
+        "CT137X使用8位共阳极数码管，段选和位选都是低电平有效。多位数码管不是8位同时各接一套段线，而是共用同一组段选线，再用位选逐位点亮。控制器在很短时间内依次显示第1位、第2位直到第8位，只要刷新足够快，人眼因为视觉暂留会认为所有位同时亮。",
+        "如果扫描频率过低会闪烁，如果位切换前没有先关断段选，可能出现重影。常用策略是1kHz左右切位，8位平均下来每位约125Hz；每次切换时先关闭所有位选，更新段码，再打开目标位选。"
+    ], st)
+    story.append(Paragraph("SRAM读写时序", st['sub_title']))
+    add_paras(story, [
+        "IS63WV1288是异步SRAM，没有SCLK输入，读写靠地址线、数据线和CE/OE/WE控制。写操作时先给出稳定地址和数据，再拉低CE和WE，保持足够写脉宽后释放WE；读操作时先给出地址并拉低CE/OE，等待访问时间后再采样数据总线。",
+        "地址建立时间表示控制信号有效前地址必须提前稳定多久，保持时间表示控制信号释放后地址还要继续保持多久。FPGA里通常用状态机把一次访问拆成SETUP、ACCESS、HOLD几个时钟周期，即使板卡和芯片速度足够快，也不要把地址、WE和数据在同一个组合表达式里瞬间改变。"
+    ], st)
+    story.append(Paragraph("DS1302 RTC", st['sub_title']))
+    add_paras(story, [
+        "DS1302保存秒、分、时、日、月、星期、年等BCD寄存器。BCD不是普通二进制，例如十进制59表示为0x59，高4位是十位5，低4位是个位9。读出时间后，如果要显示到数码管，BCD格式反而很方便；如果要做加减运算，则应先转成普通二进制。",
+        "DS1302通信使用CE、SCLK、DATA三线。CE拉高后开始传输命令字，命令最低位决定读写方向，地址位选择寄存器。它也支持突发读写：先发送burst命令，然后连续读出或写入多个时间寄存器，减少重复片选和命令开销。上电后要注意秒寄存器最高位CH，CH=1表示时钟暂停，需要清零才能让晶振运行。"
+    ], st)
+    story.append(Paragraph("W25Q128 Flash", st['sub_title']))
+    add_paras(story, [
+        "W25Q128是128Mbit SPI NOR Flash，容量为16MByte。它的擦除粒度通常大于写入粒度：可以按页编程，一页常见为256字节；但擦除必须按扇区或块进行，常用4KB扇区擦除。Flash只能把1写成0，不能直接把0写回1，所以写入前若目标区域不是全0xFF，必须先擦除。",
+        "常用命令包括0x9F读JEDEC ID、0x06写使能、0x05读状态寄存器、0x03读数据、0x02页编程、0x20扇区擦除。页编程和擦除都是内部耗时操作，发完命令不能立刻认为完成，必须轮询状态寄存器WIP位，直到WIP=0再进行下一次访问。"
+    ], st)
+
+    story.append(ChapterMarker("ch3_4", chapter_pages))
+    story.append(Paragraph("3.4  第16届蓝桥杯FPGA国赛算法拆解", st['sec_title']))
+    story.append(Paragraph("基于FPGA设计动态数据采集系统：ADC产生128个数字量，按键触发录入，集成极值统计、"
+                           "无损压缩、滑动平均滤波、归一化四种算法，数码管显示结果，串口上报数据。", st['body']))
+    add_paras(story, [
+        "这类综合题不要先写顶层，而要先把系统分成“采集、存储、计算、显示、上报”五个可验证模块。ADC模块持续刷新当前电压对应的0到127数字量；S1只在按键脉冲到来时把当前ADC值写入数组，同时记录RTC时间戳；S2只改变当前算法编号；S4触发计算状态机；S3根据当前界面选择串口上报或结果翻页。",
+        "数据量至少16个，题目又要求支持128个数字量范围，所以存储宽度可按7位或8位设计。为了简化串口格式化，内部通常用8位保存采样值，用额外计数器保存已录入数量。算法计算不要在一个时钟里写完所有循环，应该设计为多拍扫描状态机：每个时钟处理一个元素，处理完后置done标志。"
+    ], st)
 
     for name, desc, example, method in [
         ("极值统计", "统计最小值和最大值及其出现次数",
@@ -737,11 +885,37 @@ def build_chapter3(st):
         story.append(Paragraph(f"<b>示例：</b>{example}", st['body']))
         story.append(Paragraph(f"<b>实现：</b>{method}", st['comment']))
 
-    story.append(ChapterMarker("ch3_3", chapter_pages))
-    story.append(Paragraph("3.3  串口通信格式", st['sec_title']))
+    story.append(Paragraph("串口通信格式", st['sub_title']))
     story.append(Paragraph("115200/8N1，字符串格式输出。", st['body']))
     story.append(Paragraph("录入上报：[时间戳][数值][时间戳][数值]...", st['body']))
     story.append(Paragraph("算法上报：[时间戳][A1/A2/A3/A4][结果数据]", st['body']))
+
+    story.append(ChapterMarker("ch3_5", chapter_pages))
+    story.append(Paragraph("3.5  全部真题与模拟题题面", st['sec_title']))
+    add_paras(story, [
+        "本节把已提取的扫描题面逐页嵌入教材，便于离线复习和对照训练。扫描页主要来自四梯练习系统的个人练习结果解析，题型以客观选择题为主，覆盖FPGA基础、Verilog语法、组合/时序逻辑、复位、PLL、计数器、通信协议和外设应用。由于这些PDF没有可抽取文字层，本版采用原图保真嵌入，后续迭代会继续补充人工文字化解析。",
+        "使用方法：先遮住正确答案独立作答，再对照页内答案；错题不要只记选项，要回到本章前面的协议、状态机和时序原理重新解释一遍。能够用自己的话解释错误原因，比单纯记住答案更接近赛场可迁移能力。"
+    ], st)
+    summaries = {
+        "第十六届 蓝桥杯（电子类）FPGA设计与开发省赛真题": "省赛真题客观题，重点覆盖逻辑门、D触发器、PLL、Verilog语法、FPGA资源和基础时序概念。",
+        "十六届蓝桥杯FPGA模拟试题I": "模拟试题I，重点覆盖FPGA与ASIC区别、Verilog寄存器声明、组合逻辑、基础时序和常用接口概念。",
+        "十六届蓝桥杯FPGA模拟试题Ⅱ": "模拟试题II，重点覆盖数字逻辑、Verilog表达式、时钟复位、存储器和通信协议基础。",
+        "十六届蓝桥杯FPGA模拟试题Ⅲ": "模拟试题III，重点覆盖FPGA工程流程、时序约束、状态机、串口/I2C/SPI和板载外设理解。",
+        "第十七届FPGA模拟考试Ⅰ": "第17届模拟考试I，重点覆盖同步复位、FPGA可重构优势、有符号位宽、Verilog always敏感列表和协议选择。",
+        "第十七届FPGA模拟考试Ⅱ": "第17届模拟考试II，重点覆盖Verilog综合语义、时钟域处理、外设控制、数码管显示和常见赛题知识点。",
+    }
+    groups = exam_image_groups(base_dir) if base_dir else []
+    if not groups:
+        story.append(Paragraph("未找到 extracted_images 目录，跳过扫描题面嵌入。", st['tip']))
+    for exam_name, pages in groups:
+        story.append(PageBreak())
+        story.append(Paragraph(safe_xml(exam_name), st['sec_title']))
+        story.append(Paragraph(summaries.get(exam_name, "扫描题面页。"), st['desc_box']))
+        for idx, img_path in enumerate(pages, 1):
+            story.append(Paragraph(f"题面页 {idx}/{len(pages)}", st['sub_title']))
+            add_exam_image(story, img_path, st)
+            if idx != len(pages):
+                story.append(PageBreak())
     story.append(PageBreak())
     return story
 
@@ -846,13 +1020,14 @@ def main():
     # 先生成不含目录的完整内容
     content_story = []
     content_story.extend(build_cover(st))
-    # 目录占位（后面替换）
+    # 目录占位（用于让第一遍页码与最终版一致）
+    content_story.extend(build_toc(st))
     content_story.extend(build_chapter1(st))
     content_story.extend(build_chapter2(st))
-    content_story.extend(build_chapter3(st))
+    content_story.extend(build_chapter3(st, base_dir))
     content_story.extend(build_code_chapter("第四章  Driver 驱动模块详解", driver_files, 4, st))
     content_story.extend(build_code_chapter("第五章  User 应用模块详解", user_files, 5, st))
-    content_story.extend(build_build_appendix(st) if False else build_appendix(st))
+    content_story.extend(build_appendix(st))
 
     # 第一遍构建，记录页码
     doc1 = SimpleDocTemplate(output_path + ".tmp", pagesize=A4,
@@ -867,7 +1042,7 @@ def main():
     final_story.extend(build_toc(st))
     final_story.extend(build_chapter1(st))
     final_story.extend(build_chapter2(st))
-    final_story.extend(build_chapter3(st))
+    final_story.extend(build_chapter3(st, base_dir))
     final_story.extend(build_code_chapter("第四章  Driver 驱动模块详解", driver_files, 4, st))
     final_story.extend(build_code_chapter("第五章  User 应用模块详解", user_files, 5, st))
     final_story.extend(build_appendix(st))

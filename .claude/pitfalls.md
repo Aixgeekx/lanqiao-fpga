@@ -1,11 +1,13 @@
-### 2026-05-20 PDF full extraction timeout
-- **现象**：对 `title` 下所有 PDF 逐页全文抽取时，命令 300 秒超时。
-- **原因**：Xilinx 官方 user guide 和器件 datasheet 页数很多，全文逐页解析成本过高。
-- **解决**：改用 `Aix_tools/extract_title_docs.py`，对小型官方资料全文抽取，对大型 datasheet 抽页数、首页/尾页和关键词摘要。
-- **教训**：以后读取 FPGA 官方资料包时先按页数分级，赛题、引脚表、用户手册优先全文抽取，大型参考手册只建索引。
+# 踩坑记录
 
-### 2026-05-20 Icarus Verilog generation flag mismatch
-- **现象**：`iverilog -g2012` 报 `Unknown/Unsupported Language generation 2012`。
-- **原因**：本机 Icarus Verilog 版本只列出 `1995/2001/2005/system-verilog` 等生成选项。
-- **解决**：当前模板改用 `iverilog -g2005 -o Aix_tools\top_syntax.vvp user\*.v driver\*.v`，语法检查通过。
-- **教训**：本项目做快速语法检查时优先用 `-g2005`，除非后续确认该环境支持 SystemVerilog 标志。
+### 2026-05-27 扫描题面 PDF 没有文字层
+- **现象**：6 份扫描版真题/模拟题用 PyMuPDF 抽取文字时字符数为 0。
+- **原因**：PDF 页面是图片，没有可复制文本；本机没有可直接使用的 Tesseract 或 Windows OCR 命令。
+- **解决**：本轮先用 ReportLab 将 `真题模拟题/extracted_images` 下的 PNG 页面按题目顺序嵌入教材，确保题面完整进入 PDF。
+- **教训**：后续若要逐题文字化解析，需要先安装可靠 OCR，或人工读取题面后整理成结构化 Markdown。
+
+### 2026-05-27 代码章节目录与正文顺序不一致
+- **现象**：目录显示 `4.1 key_ctrl.v`，但正文 4.1 实际输出为 `adc_ctrl.v`。
+- **原因**：`read_verilog()` 按文件名字母序读取，目录使用人工教学顺序，二者没有统一排序来源。
+- **解决**：新增 `MODULE_ORDER`，Driver/User 文件按教学顺序读取，目录和正文编号恢复一致。
+- **教训**：生成类文档的目录、正文和页码必须共享同一份排序配置，不能一处硬编码一处自动排序。
