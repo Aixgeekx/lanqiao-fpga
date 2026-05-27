@@ -71,6 +71,8 @@ class ChapterMarker(Flowable):
         self.chapter_map[self.key] = self.canv.getPageNumber()
 
 chapter_pages = {}  # 全局页码记录
+table_counter = 0   # 表格编号计数器
+figure_counter = 0  # 图片编号计数器
 
 # ==================== 样式定义 ====================
 def S():
@@ -107,7 +109,31 @@ def S():
     s['toc_ch'] = ParagraphStyle('TOCCH', fontName='SimHei', fontSize=11, textColor=C['primary'], spaceBefore=4*mm, spaceAfter=1*mm)
     s['toc_entry'] = ParagraphStyle('TOCE', fontName='MSYH', fontSize=9, textColor=C['text_light'], leftIndent=8*mm)
     s['toc_page'] = ParagraphStyle('TOCP', fontName='MSYH', fontSize=9, textColor=C['text_light'], alignment=TA_RIGHT)
+    # 图表编号
+    s['table_caption'] = ParagraphStyle('TCAP', fontName='MSYH', fontSize=8, leading=11, textColor=C['text_light'], alignment=TA_CENTER, spaceBefore=1*mm, spaceAfter=2*mm)
+    s['figure_caption'] = ParagraphStyle('FCAP', fontName='MSYH', fontSize=8, leading=11, textColor=C['text_light'], alignment=TA_CENTER, spaceBefore=1*mm, spaceAfter=2*mm)
     return s
+
+# ==================== 图表编号函数 ====================
+def next_table_num():
+    global table_counter
+    table_counter += 1
+    return table_counter
+
+def next_figure_num():
+    global figure_counter
+    figure_counter += 1
+    return figure_counter
+
+def table_caption(st, text):
+    """生成带编号的表格标题"""
+    num = next_table_num()
+    return Paragraph(f"表 {num}  {text}", st['table_caption'])
+
+def figure_caption(st, text):
+    """生成带编号的图片标题"""
+    num = next_figure_num()
+    return Paragraph(f"图 {num}  {text}", st['figure_caption'])
 
 # ==================== 装饰元素 ====================
 class DecorLine(Flowable):
@@ -646,6 +672,7 @@ def build_chapter1(st):
         [td("UART"), td("CH340C USB转串口"), td("UART"), td("TX=F12,RX=E12")],
         [td("蜂鸣器"), td("无源,NPN驱动"), td("GPIO"), td("L5")],
     ]
+    story.append(table_caption(st, "CT137X 硬件资源配置"))
     t = Table(hw, colWidths=[2.8*cm, 3.5*cm, 2.2*cm, 4.8*cm])
     t.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), C['primary']),
