@@ -24,20 +24,27 @@
   - 第十七届蓝桥杯FPGA省赛真题（客观题 + 设计题）
   - 十六届蓝桥杯FPGA模拟试题I / II / III
   - 第十七届FPGA模拟考试I / II / III
+- 出版与纸质手册定位增强：
+  - 加入出版说明页、纸质使用建议、赛场速查卡
+  - 封面改为“赛场手册与开发教程”，署名为“Aix，极道工作室”
+  - 第17届省赛客观题和程序设计题改为结构化整理，并保留完整题面图片
+  - 附录新增 `title` 官方资料依据速查表和 CT137X 关键硬件事实表
 - 新版 PDF 已生成：
   - 路径：`results/蓝桥杯FPGA开发教程_详细注释版.pdf`
-  - 页数：99
+  - 页数：98
+  - 大小：约 23.3 MB
   - 图片页：46 页
 
 ## 验证结果
 
 - `python -m py_compile Aix_tools/generate_textbook_v3.py` 通过
 - `python Aix_tools/generate_textbook_v3.py` 通过
-- PyMuPDF 检查命中关键字：全部 9 份题名
-- 已同步到 `project/lanqiao-fpga-textbook` 并更新 Markdown
+- PyMuPDF 检查命中关键字：出版说明、赛场速查卡、第17届省赛题目摘要、程序设计题FSM速查、全部 9 份题名、官方资料依据速查、CT137X关键硬件事实
+- 已渲染抽检封面、出版说明、速查卡、目录、题面页、代码页和附录页到 `Aix_tools/pdf_check/`
 
 ## 待完成
 
 - 对扫描题逐页人工文字化整理，增加错题解析和对应知识点索引
 - 优化排版美化，准备出版
+- 同步本轮 98 页新版 PDF、脚本和 Markdown 到 GitHub
 - 持续迭代并上传 GitHub

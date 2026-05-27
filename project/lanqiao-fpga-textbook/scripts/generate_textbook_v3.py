@@ -19,6 +19,10 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from PIL import Image as PILImage
+try:
+    import fitz
+except ImportError:
+    fitz = None
 
 # ==================== 颜色主题 ====================
 C = {
@@ -96,6 +100,8 @@ def S():
     s['td'] = ParagraphStyle('TD', fontName='MSYH', fontSize=7.5, textColor=C['text'], alignment=TA_CENTER)
     s['td_l'] = ParagraphStyle('TDL', fontName='MSYH', fontSize=7.5, textColor=C['text'], alignment=TA_LEFT)
     s['caption'] = ParagraphStyle('CAP', fontName='MSYH', fontSize=7.5, leading=10, textColor=C['text_light'], alignment=TA_CENTER, spaceBefore=1*mm, spaceAfter=1.5*mm)
+    s['quote'] = ParagraphStyle('QT', fontName='MSYH', fontSize=9, leading=14, textColor=C['text'], backColor=HexColor('#f8fafc'), borderWidth=1, borderColor=C['border'], borderPadding=8, leftIndent=4*mm, rightIndent=4*mm, spaceAfter=3*mm)
+    s['manual'] = ParagraphStyle('MAN', fontName='SimHei', fontSize=10, leading=15, textColor=C['primary'], backColor=C['light_bg'], borderWidth=1, borderColor=C['border'], borderPadding=7, spaceBefore=1.5*mm, spaceAfter=1.5*mm)
     # 目录
     s['toc_title'] = ParagraphStyle('TOCT', fontName='SimHei', fontSize=22, alignment=TA_CENTER, textColor=C['primary'], spaceBefore=8*mm, spaceAfter=8*mm)
     s['toc_ch'] = ParagraphStyle('TOCCH', fontName='SimHei', fontSize=11, textColor=C['primary'], spaceBefore=4*mm, spaceAfter=1*mm)
@@ -211,16 +217,16 @@ def build_cover(st):
     # 主标题
     story.append(Paragraph("蓝桥杯 FPGA", st['cover_title']))
     story.append(Spacer(1, 3*mm))
-    story.append(Paragraph("开发教程", st['cover_sub']))
+    story.append(Paragraph("赛场手册与开发教程", st['cover_sub']))
     story.append(Spacer(1, 8*mm))
     story.append(ColorBar(width=8*cm, colors=[C['accent'], C['secondary'], C['accent']]))
     story.append(Spacer(1, 8*mm))
-    story.append(Paragraph("详细代码注释版 · 竞赛备考专用", ParagraphStyle('VT', fontName='MSYH', fontSize=13, alignment=TA_CENTER, textColor=C['text_light'])))
+    story.append(Paragraph("纸质速查 · 零基础教学 · 出版预备版", ParagraphStyle('VT', fontName='MSYH', fontSize=13, alignment=TA_CENTER, textColor=C['text_light'])))
     story.append(Spacer(1, 1.5*cm))
     # 信息框
     box = ParagraphStyle('BOX', fontName='MSYH', fontSize=10, alignment=TA_CENTER, textColor=C['text'],
                          backColor=C['card_bg'], borderWidth=1.5, borderColor=C['border'], borderPadding=14, spaceAfter=3*mm)
-    story.append(Paragraph("作者：Aix", box))
+    story.append(Paragraph("作者：Aix，极道工作室", box))
     story.append(Paragraph("极道工作室  ·  JIDAO STUDIO", st['cover_info']))
     story.append(Spacer(1, 1*cm))
     story.append(Paragraph("基于 DP2026 竞赛实训平台", st['cover_info']))
@@ -229,6 +235,55 @@ def build_cover(st):
     story.append(ColorBar(colors=[C['primary'], C['secondary'], C['accent'], C['secondary'], C['primary']]))
     story.append(Spacer(1, 5*mm))
     story.append(Paragraph("V3.0 · 2026年5月", ParagraphStyle('V3', fontName='MSYH', fontSize=9, alignment=TA_CENTER, textColor=C['muted'])))
+    story.append(PageBreak())
+    return story
+
+def build_front_matter(st):
+    story = []
+    story.append(ChapterMarker("front", chapter_pages))
+    story.append(Spacer(1, 1.2*cm))
+    story.append(Paragraph("出版说明", st['ch_title']))
+    story.append(DecorLine())
+    story.append(Paragraph("本书定位为蓝桥杯FPGA赛场纸质使用手册与零基础教学教程。纸质手册要求“翻得快、查得准、能落地”，教学教程要求“讲清原理、给出路径、让初学者能独立复现”。因此本书采用两层结构：前部给出速查卡和硬件事实，正文解释协议、状态机和外设时序，后部保留完整代码和题面。", st['quote']))
+    story.append(Paragraph("作者署名：Aix，极道工作室。当前版本为出版预备稿，后续会继续整理题面版权说明、图表编号、参考文献、页眉页脚规范和印刷版封面。", st['body']))
+    story.append(Paragraph("纸质使用建议", st['sec_title']))
+    guide = [
+        [Paragraph("场景", st['th']), Paragraph("优先翻阅位置", st['th']), Paragraph("原因", st['th'])],
+        [Paragraph("忘记引脚", st['td']), Paragraph("第一章硬件表、第二章XDC、附录官方依据", st['td']), Paragraph("赛场最常见错误是端口名、电平和引脚不一致。", st['td_l'])],
+        [Paragraph("协议不会写", st['td']), Paragraph("第三章I2C/UART/SPI、第四章对应驱动", st['td']), Paragraph("先理解时序规则，再照驱动模板改参数。", st['td_l'])],
+        [Paragraph("综合题卡住", st['td']), Paragraph("第三章国赛算法拆解、第五章top结构", st['td']), Paragraph("按采集、存储、计算、显示、上报拆模块。", st['td_l'])],
+        [Paragraph("硬件现象异常", st['td']), Paragraph("赛场速查卡、附录、电源/复位/消抖说明", st['td']), Paragraph("先排查极性、复位、时钟域和外设忙状态。", st['td_l'])],
+    ]
+    t = Table(guide, colWidths=[3*cm, 5.2*cm, 6.8*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 4), ('BOTTOMPADDING', (0,0), (-1,-1), 4)]))
+    story.append(t)
+    story.append(PageBreak())
+
+    story.append(Paragraph("赛场速查卡", st['ch_title']))
+    story.append(DecorLine())
+    cards = [
+        ("一页判断工程方向", "先确定顶层端口和XDC一致，再确认复位极性、LED/数码管低有效、时钟50MHz。功能拆成输入采样、状态机控制、数据存储、算法计算、显示输出五层。"),
+        ("按键", "机械抖动按10ms到20ms处理。低有效按键先同步再消抖，只给业务逻辑一个单周期脉冲，不要把物理按键直接接状态跳转。"),
+        ("UART", "115200/8N1：空闲高、起始位低、8位数据低位先发、停止位高。50MHz下每位约434个时钟，接收要在位中心采样。"),
+        ("I2C", "SCL高时SDA稳定；SCL低时改变SDA。START是SCL高时SDA下降，STOP是SCL高时SDA上升。地址后第9拍看ACK。"),
+        ("SPI", "CS选中器件，SCLK给节拍，MOSI发，MISO收。先确认CPOL/CPHA，再确认MSB first还是LSB first。DS1302是三线类SPI。"),
+        ("数码管", "共阳极低有效。段选决定显示数字，位选决定哪一位亮。约1kHz切位，先关位选再换段码，避免重影。"),
+        ("Flash", "W25Q128写/擦除前发0x06写使能。页编程0x02，扇区擦除0x20，操作后轮询0x05状态寄存器WIP。"),
+        ("SRAM", "异步并口存储。写：地址和数据先稳定，再拉WE。读：地址稳定后拉OE，等待访问时间再采样数据。"),
+    ]
+    card_data = []
+    for i in range(0, len(cards), 2):
+        row = []
+        for title, body in cards[i:i+2]:
+            row.append(Paragraph(f"<b>{title}</b><br/>{body}", st['manual']))
+        card_data.append(row)
+    t = Table(card_data, colWidths=[7.5*cm, 7.5*cm])
+    t.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('LEFTPADDING', (0,0), (-1,-1), 3),
+                           ('RIGHTPADDING', (0,0), (-1,-1), 3), ('TOPPADDING', (0,0), (-1,-1), 3),
+                           ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(t)
     story.append(PageBreak())
     return story
 
@@ -242,6 +297,7 @@ def build_toc(st):
 
     # TOC条目：key = chapter_pages中的key
     toc_items = [
+        ("front", "出版说明与赛场速查卡", True),
         ("ch1",  "第一章  硬件平台概览", True),
         ("ch1_1","1.1  DP2026 FPGA竞赛实训平台", False),
         ("ch1_2","1.2  硬件资源配置", False),
@@ -742,11 +798,14 @@ def exam_image_groups(base_dir):
         return int(m.group(1)) if m else 0
     order = [
         "第十六届 蓝桥杯（电子类）FPGA设计与开发省赛真题",
+        "第十七届蓝桥杯FPGA省赛真题",
+        "第十七届蓝桥杯FPGA省赛真题_设计题",
         "十六届蓝桥杯FPGA模拟试题I",
         "十六届蓝桥杯FPGA模拟试题Ⅱ",
         "十六届蓝桥杯FPGA模拟试题Ⅲ",
         "第十七届FPGA模拟考试Ⅰ",
         "第十七届FPGA模拟考试Ⅱ",
+        "第十七届FPGA模拟考试Ⅲ",
     ]
     return [(name, sorted(groups[name], key=page_no)) for name in order if name in groups]
 
@@ -757,6 +816,55 @@ def add_exam_image(story, path, st):
     scale = min(max_w / w, max_h / h)
     story.append(RLImage(path, width=w*scale, height=h*scale))
     story.append(Paragraph(os.path.basename(path), st['caption']))
+
+def read_pdf_text(base_dir, filename):
+    if fitz is None:
+        return ""
+    pdf_path = os.path.join(base_dir, "真题模拟题", filename)
+    if not os.path.exists(pdf_path):
+        return ""
+    doc = fitz.open(pdf_path)
+    return "\n".join(page.get_text("text") for page in doc).strip()
+
+def add_pdf_text_block(story, title, text, st, max_chars=None):
+    story.append(Paragraph(safe_xml(title), st['sub_title']))
+    if not text:
+        story.append(Paragraph("未能读取文字层，后续以题面图片或人工整理方式补充。", st['tip']))
+        return
+    cleaned = re.sub(r"\s+", " ", text).strip()
+    if max_chars:
+        cleaned = cleaned[:max_chars]
+    for i in range(0, len(cleaned), 650):
+        story.append(Paragraph(safe_xml(cleaned[i:i+650]), st['body']))
+
+def add_17th_province_summary(story, st):
+    story.append(Paragraph("第17届省赛题目摘要", st['sub_title']))
+    story.append(Paragraph("完整原题以扫描页形式保留在后续题面页中。这里先整理为纸质手册可快速复盘的结构化摘要，便于赛场前训练时抓住命题目标。", st['body']))
+    rows = [
+        [Paragraph("试题", st['th']), Paragraph("考点", st['th']), Paragraph("复盘重点", st['th'])],
+        [Paragraph("客观题", st['td']), Paragraph("FPGA资源、复位、SPI、移位寄存器、差分信号、RS-232、ESD、卡诺图、I2C吞吐、亚稳态", st['td_l']), Paragraph("每题都要能反推到硬件或时序原因，不能只背选项。", st['td_l'])],
+        [Paragraph("程序设计题", st['td']), Paragraph("串行工序控制器：IDLE、LOAD、PROCESS、INSPECT、UNLOAD、ERROR", st['td_l']), Paragraph("典型FSM综合题，核心是状态跳转、倒计时、ADC阈值、暂停恢复和显示映射。", st['td_l'])],
+    ]
+    t = Table(rows, colWidths=[2.6*cm, 7.2*cm, 5.2*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 4), ('BOTTOMPADDING', (0,0), (-1,-1), 4)]))
+    story.append(t)
+    states = [
+        [Paragraph("状态", st['th']), Paragraph("进入/保持条件", st['th']), Paragraph("动作", st['th'])],
+        [Paragraph("IDLE", st['td']), Paragraph("复位后默认；ADC<128时S1无效", st['td_l']), Paragraph("LD1亮，等待原材料就绪和启动", st['td_l'])],
+        [Paragraph("LOAD", st['td']), Paragraph("ADC>=128且S1按下", st['td_l']), Paragraph("持续5秒，LD2亮", st['td_l'])],
+        [Paragraph("PROCESS", st['td']), Paragraph("LOAD计时结束", st['td_l']), Paragraph("持续8秒，输出1kHz 90%占空比，LD3亮", st['td_l'])],
+        [Paragraph("INSPECT", st['td']), Paragraph("PROCESS计时结束", st['td_l']), Paragraph("持续8秒，输出1kHz 10%占空比；ADC<32立即进ERROR", st['td_l'])],
+        [Paragraph("UNLOAD", st['td']), Paragraph("INSPECT正常结束", st['td_l']), Paragraph("持续5秒；N>1则N减1回LOAD，否则回IDLE", st['td_l'])],
+        [Paragraph("ERROR", st['td']), Paragraph("检测中ADC<32", st['td_l']), Paragraph("LD6每0.2秒闪烁，S4人工重置回IDLE", st['td_l'])],
+    ]
+    story.append(Paragraph("程序设计题FSM速查", st['sub_title']))
+    t = Table(states, colWidths=[2.4*cm, 5.8*cm, 6.8*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(t)
 
 # ==================== 真题实战章节 ====================
 def build_chapter3(st, base_dir=None):
@@ -892,17 +1000,26 @@ SCL:       _|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_
 
     story.append(ChapterMarker("ch3_5", chapter_pages))
     story.append(Paragraph("3.5  全部真题与模拟题题面", st['sec_title']))
+    if base_dir:
+        story.append(Paragraph("第17届省赛结构化整理", st['sub_title']))
+        add_paras(story, [
+            "第17届省赛资料中，客观题和程序设计题带有可抽取文字层，本版直接纳入教材。客观题适合作为赛前概念自测；程序设计题是典型FSM综合题，要求把工序控制、ADC阈值判断、按键、LED和数码管显示组合成完整系统。",
+        ], st)
+        add_17th_province_summary(story, st)
     add_paras(story, [
         "本节把已提取的扫描题面逐页嵌入教材，便于离线复习和对照训练。扫描页主要来自四梯练习系统的个人练习结果解析，题型以客观选择题为主，覆盖FPGA基础、Verilog语法、组合/时序逻辑、复位、PLL、计数器、通信协议和外设应用。由于这些PDF没有可抽取文字层，本版采用原图保真嵌入，后续迭代会继续补充人工文字化解析。",
         "使用方法：先遮住正确答案独立作答，再对照页内答案；错题不要只记选项，要回到本章前面的协议、状态机和时序原理重新解释一遍。能够用自己的话解释错误原因，比单纯记住答案更接近赛场可迁移能力。"
     ], st)
     summaries = {
         "第十六届 蓝桥杯（电子类）FPGA设计与开发省赛真题": "省赛真题客观题，重点覆盖逻辑门、D触发器、PLL、Verilog语法、FPGA资源和基础时序概念。",
+        "第十七届蓝桥杯FPGA省赛真题": "第17届省赛客观题，共10题，覆盖FPGA资源、复位、SPI、移位寄存器、差分信号、RS-232、ESD、卡诺图、I2C吞吐和亚稳态。",
+        "第十七届蓝桥杯FPGA省赛真题_设计题": "第17届省赛程序设计题，串行工序控制器，重点考FSM、ADC阈值、倒计时、按键控制、LED报警和数码管显示。",
         "十六届蓝桥杯FPGA模拟试题I": "模拟试题I，重点覆盖FPGA与ASIC区别、Verilog寄存器声明、组合逻辑、基础时序和常用接口概念。",
         "十六届蓝桥杯FPGA模拟试题Ⅱ": "模拟试题II，重点覆盖数字逻辑、Verilog表达式、时钟复位、存储器和通信协议基础。",
         "十六届蓝桥杯FPGA模拟试题Ⅲ": "模拟试题III，重点覆盖FPGA工程流程、时序约束、状态机、串口/I2C/SPI和板载外设理解。",
         "第十七届FPGA模拟考试Ⅰ": "第17届模拟考试I，重点覆盖同步复位、FPGA可重构优势、有符号位宽、Verilog always敏感列表和协议选择。",
         "第十七届FPGA模拟考试Ⅱ": "第17届模拟考试II，重点覆盖Verilog综合语义、时钟域处理、外设控制、数码管显示和常见赛题知识点。",
+        "第十七届FPGA模拟考试Ⅲ": "第17届模拟考试III，重点覆盖FPGA基础概念、Verilog语义、外设接口和综合设计常识。",
     }
     groups = exam_image_groups(base_dir) if base_dir else []
     if not groups:
@@ -997,6 +1114,55 @@ def build_appendix(st):
     ]))
     story.append(t)
 
+    story.append(Spacer(1, 5*mm))
+    story.append(Paragraph("C. 官方资料依据速查", st['sec_title']))
+    story.append(Paragraph("本书的硬件事实优先来自项目 `title` 目录中的官方资料。纸质手册使用时，若代码、网络资料和本表冲突，优先按官方用户手册、引脚表、原理图和芯片数据手册核对。", st['body']))
+    docs = [
+        [th("资料"), th("用途"), th("赛场查什么")],
+        [td("CT137X_UM.pdf"), td("开发板用户手册"), td("平台资源、扩展接口、电源和基本使用方法")],
+        [td("CT137X_PIN.pdf/xlsx"), td("官方引脚表"), td("顶层端口到FPGA管脚的唯一依据")],
+        [td("CT137X_SCH.pdf"), td("原理图"), td("LED/数码管/蜂鸣器有效电平和外设连接")],
+        [td("SEG_TABLE.pdf"), td("段码表"), td("共阳极数码管0-9、空白和特殊符号段码")],
+        [td("ADC081C021.pdf"), td("ADC数据手册"), td("I2C地址、8位转换结果、数据格式")],
+        [td("DAC5571.pdf"), td("DAC数据手册"), td("I2C写格式、8位输出、上电复位行为")],
+        [td("AT24C02.pdf"), td("EEPROM数据手册"), td("页写入、地址字节、写周期等待")],
+        [td("DS1302.PDF"), td("RTC数据手册"), td("三线通信、BCD寄存器、CH/WP位、突发读写")],
+        [td("IS63WV1288.pdf"), td("SRAM数据手册"), td("异步读写时序、地址/数据/CE/OE/WE")],
+        [td("W25Q128.pdf"), td("SPI Flash数据手册"), td("0x9F/0x06/0x05/0x03/0x02/0x20命令")],
+    ]
+    t = Table(docs, colWidths=[3.6*cm, 4.1*cm, 7.2*cm])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), C['primary']),
+        ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+    ]))
+    story.append(t)
+
+    story.append(Paragraph("D. CT137X关键硬件事实", st['sec_title']))
+    facts = [
+        [th("项目"), th("事实")],
+        [td("核心芯片"), td("Xilinx Spartan-7 XC7S6-1FTGB196，板载50MHz时钟接G11")],
+        [td("复位"), td("RESET/B6为板级高有效，常在顶层转换为内部低有效sys_rst_n")],
+        [td("按键"), td("S1/S2/S3/S4分别接M5/M4/P5/N4，低电平有效")],
+        [td("LED"), td("LD1-LD8低电平点亮，输出显示模式前需按硬件极性取反")],
+        [td("数码管"), td("8位共阳极，段选SEGA-SEGDP低有效，位选COM1-COM8低有效")],
+        [td("I2C"), td("ADC、DAC、EEPROM共用SCL=E11、SDA=M10")],
+        [td("RTC"), td("DS1302使用SCLK=A10、CE/RST=A12、DATA=A13")],
+        [td("UART"), td("CH340C USB转串口，TX=F12、RX=E12")],
+        [td("Flash"), td("W25Q128用户Flash使用CS=D12、SCK=D13、IO0=G14、IO1=F14、IO2=F13、IO3=E13")],
+    ]
+    t = Table(facts, colWidths=[3.2*cm, 11.5*cm])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), C['primary']),
+        ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+    ]))
+    story.append(t)
+
     story.append(Spacer(1, 2*cm))
     story.append(DecorLine(color=C['muted'], thickness=0.5))
     story.append(Paragraph("© 2026 极道工作室 · JIDAO STUDIO · 版权所有", ParagraphStyle('CR', fontName='MSYH', fontSize=9, alignment=TA_CENTER, textColor=C['muted'])))
@@ -1020,6 +1186,7 @@ def main():
     # 先生成不含目录的完整内容
     content_story = []
     content_story.extend(build_cover(st))
+    content_story.extend(build_front_matter(st))
     # 目录占位（用于让第一遍页码与最终版一致）
     content_story.extend(build_toc(st))
     content_story.extend(build_chapter1(st))
@@ -1039,6 +1206,7 @@ def main():
     # ========== 第二遍：带页码的目录 + 正文 ==========
     final_story = []
     final_story.extend(build_cover(st))
+    final_story.extend(build_front_matter(st))
     final_story.extend(build_toc(st))
     final_story.extend(build_chapter1(st))
     final_story.extend(build_chapter2(st))
