@@ -259,6 +259,22 @@ def build_front_matter(st):
                            ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
                            ('TOPPADDING', (0,0), (-1,-1), 4), ('BOTTOMPADDING', (0,0), (-1,-1), 4)]))
     story.append(t)
+
+    story.append(Paragraph("零基础14天学习路线", st['sec_title']))
+    route = [
+        [Paragraph("阶段", st['th']), Paragraph("目标", st['th']), Paragraph("必须完成的手上动作", st['th'])],
+        [Paragraph("D1-D2", st['td']), Paragraph("认识CT137X硬件和XDC", st['td_l']), Paragraph("点亮LED、让数码管显示固定数字，确认低有效极性。", st['td_l'])],
+        [Paragraph("D3-D4", st['td']), Paragraph("掌握时钟、复位、按键消抖", st['td_l']), Paragraph("写一个按键加减计数器，观察一次按键只触发一次。", st['td_l'])],
+        [Paragraph("D5-D6", st['td']), Paragraph("掌握状态机和动态扫描", st['td_l']), Paragraph("用三段式状态机控制LED模式，并把状态显示到数码管。", st['td_l'])],
+        [Paragraph("D7-D9", st['td']), Paragraph("学习UART、I2C、SPI", st['td_l']), Paragraph("串口发字符串；读ADC；理解DS1302/W25Q128命令帧。", st['td_l'])],
+        [Paragraph("D10-D12", st['td']), Paragraph("做综合题拆分", st['td_l']), Paragraph("把题目拆成采集、存储、计算、显示、上报五层模块。", st['td_l'])],
+        [Paragraph("D13-D14", st['td']), Paragraph("赛前压测和错题复盘", st['td_l']), Paragraph("按本书题面限时训练，记录错误原因和对应知识点。", st['td_l'])],
+    ]
+    t = Table(route, colWidths=[2.2*cm, 4.4*cm, 8.4*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(t)
     story.append(PageBreak())
 
     story.append(Paragraph("赛场速查卡", st['ch_title']))
@@ -306,7 +322,8 @@ def build_toc(st):
         ("ch1_5","1.5  电源配置", False),
         ("ch2",  "第二章  引脚约束与配置", True),
         ("ch2_1","2.1  XDC约束文件说明", False),
-        ("ch2_2","2.2  完整引脚映射表", False),
+        ("ch2_2","2.2  Vivado工程创建流程", False),
+        ("ch2_3","2.3  完整引脚映射表", False),
         ("ch3",  "第三章  核心原理与真题实战", True),
         ("ch3_1","3.1  数字系统设计方法", False),
         ("ch3_2","3.2  I2C/UART/SPI通信协议", False),
@@ -746,9 +763,33 @@ set_property -dict {PACKAGE_PIN M4 IOSTANDARD LVCMOS33} [get_ports {key[1]}]  # 
     story.append(Spacer(1, 3*mm))
 
     story.append(ChapterMarker("ch2_2", chapter_pages))
-    story.append(Paragraph("2.2  完整引脚映射表", st['sec_title']))
+    story.append(Paragraph("2.2  Vivado工程创建流程", st['sec_title']))
+    story.append(Paragraph("零基础最容易卡在“代码没问题但工程建错”。建议每个赛题都按固定流程建立工程，减少隐性环境差异。", st['body']))
     def th(t): return Paragraph(t, st['th'])
     def td(t): return Paragraph(t, st['td'])
+    flow = [
+        [th("步骤"), th("动作"), th("检查点")],
+        [td("1"), td("Create Project，选择RTL Project，不勾选Do not specify sources"), td("工程名用英文和下划线，避免中文路径导致工具异常")],
+        [td("2"), td("选择器件XC7S6-1FTGB196或按板卡手册选择对应Spartan-7型号"), td("器件型号错误会导致引脚约束无法匹配")],
+        [td("3"), td("添加driver和user中的Verilog源文件"), td("顶层只保留一个top_board或比赛要求的顶层模块")],
+        [td("4"), td("添加XDC约束文件并核对端口名"), td("get_ports名称必须和顶层端口完全一致")],
+        [td("5"), td("Run Synthesis -> Run Implementation -> Generate Bitstream"), td("先看Critical Warning，再看Timing是否通过")],
+        [td("6"), td("下载bit文件到板卡并做最小硬件验证"), td("先测LED/数码管/按键，再接入复杂外设")],
+    ]
+    t = Table(flow, colWidths=[1.4*cm, 6.2*cm, 7.4*cm])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), C['primary']),
+        ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+    ]))
+    story.append(t)
+    story.append(Paragraph("<b>赛场原则：</b>不要一上来就把所有模块接进顶层。先建立能综合、能下载、能看到LED变化的最小工程，再逐个接外设。每接入一个外设，都保留一个可观察输出作为验收点。", st['tip']))
+
+    story.append(ChapterMarker("ch2_3", chapter_pages))
+    story.append(Paragraph("2.3  完整引脚映射表", st['sec_title']))
     pins = [
         [th("功能"), th("引脚"), th("FPGA"), th("功能"), th("引脚"), th("FPGA")],
         [td("S1"), td("key[0]"), td("M5"), td("LD1"), td("led[0]"), td("N14")],

@@ -2,4 +2,6 @@ __pycache__/
 *.py[cod]
 *.tmp
 Aix_tools/pdf_check/
+Aix_tools/git_watch_push.log
+Aix_tools/git_watch_push.pid
 project/lanqiao-fpga-textbook/.git/
