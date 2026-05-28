@@ -21,6 +21,9 @@
 - 当前规模：112 页，约 6.9 MB，正文可抽取字符 128930 个。
 - 题面素材：已嵌入 9 组真题/模拟题，共 46 页图片，均经过 JPEG 缓存压缩。
 - 最近验证：`python -m py_compile Aix_tools/generate_textbook_v3.py` 与 `python Aix_tools/generate_textbook_v3.py` 均通过；关键字命中“零基础14天学习路线”“Vivado工程创建流程”“真题训练索引与错题复盘表”“错题复盘模板”“官方资料依据速查”。
+
+## 真题分析辅助文件
+
 - `extracted_16national.txt`：第16届 FPGA 国赛题面文字抽取结果。
 - `exam_analysis_16national.md`：第16届 FPGA 国赛题目架构拆解、算法模块和实现要点解析。
 - `extracted_17ps.txt`：第17届 FPGA 省赛客观题文字抽取结果。
