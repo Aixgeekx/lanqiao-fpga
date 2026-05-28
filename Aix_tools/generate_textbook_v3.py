@@ -365,6 +365,45 @@ def build_front_matter(st):
     story.append(table_caption(st, "赛场速查卡"))
     story.append(t)
     story.append(PageBreak())
+
+    story.append(Paragraph("赛场上板调试清单", st['ch_title']))
+    story.append(DecorLine())
+    story.append(Paragraph("纸质手册最重要的价值，是在板子现象不对时快速缩小问题范围。调试时不要同时怀疑所有模块，按“工程能否生成bit、管脚是否正确、基础IO是否正常、外设握手是否成立、业务状态机是否走到目标状态”的顺序排查。每一步都要让板上有可观察输出，例如LED、数码管、串口日志或ILA波形。", st['quote']))
+    checks = [
+        [Paragraph("阶段", st['th']), Paragraph("必须确认", st['th']), Paragraph("失败时先查", st['th'])],
+        [Paragraph("1. 综合前", st['td']), Paragraph("顶层模块名、端口名、文件加入工程、Verilog语法均正确", st['td_l']), Paragraph("端口拼写、未保存文件、重复模块名、中文路径或非法字符", st['td_l'])],
+        [Paragraph("2. 约束", st['td']), Paragraph("每个顶层IO都有XDC管脚和IOSTANDARD LVCMOS33", st['td_l']), Paragraph("端口名大小写、引脚表版本、复位和按键有效电平", st['td_l'])],
+        [Paragraph("3. 实现", st['td']), Paragraph("无多驱动、无锁存器警告、时钟来自50MHz主时钟", st['td_l']), Paragraph("同一reg被多个always赋值、组合always缺默认值、派生时钟乱用", st['td_l'])],
+        [Paragraph("4. 下载", st['td']), Paragraph("bitstream可生成，Hardware Manager能识别器件并完成Program", st['td_l']), Paragraph("JTAG线、电源、驱动、开发板模式、电缆连接", st['td_l'])],
+        [Paragraph("5. 基础IO", st['td']), Paragraph("LED流水、按键脉冲、数码管固定数字均可独立工作", st['td_l']), Paragraph("低有效极性、消抖、位选段选顺序、复位释放", st['td_l'])],
+        [Paragraph("6. 外设", st['td']), Paragraph("I2C有ACK、SPI有片选和时钟、UART能收发已知字符串", st['td_l']), Paragraph("上拉、片选极性、CPOL/CPHA、波特率计数、三态方向", st['td_l'])],
+        [Paragraph("7. 综合题", st['td']), Paragraph("输入采样、状态机、存储、算法、显示、串口分层验证", st['td_l']), Paragraph("先看状态编号，再看计数器边界，最后看数据格式化", st['td_l'])],
+    ]
+    t = Table(checks, colWidths=[2.5*cm, 6.2*cm, 6.3*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(table_caption(st, "赛场上板七步调试清单"))
+    story.append(t)
+
+    story.append(Paragraph("常见板上现象排查表", st['sec_title']))
+    faults = [
+        [Paragraph("现象", st['th']), Paragraph("高概率原因", st['th']), Paragraph("定位动作", st['th'])],
+        [Paragraph("LED全灭或全亮", st['td']), Paragraph("低有效极性写反、复位未释放、XDC端口错", st['td_l']), Paragraph("先写固定8'h55/8'haa测试，再核对CT137X引脚表。", st['td_l'])],
+        [Paragraph("数码管乱码/重影", st['td']), Paragraph("段码表不匹配、位选低有效、切位时未先关位", st['td_l']), Paragraph("只点亮一位显示8，再逐位扫描，确认COM和SEG顺序。", st['td_l'])],
+        [Paragraph("按键按一次跳多次", st['td']), Paragraph("没有消抖或直接用物理按键驱动状态机", st['td_l']), Paragraph("观察消抖后单周期脉冲，确认业务逻辑只接debounced_pulse。", st['td_l'])],
+        [Paragraph("I2C无ACK", st['td']), Paragraph("地址错、SDA方向没释放、SCL/SDA引脚反、总线缺上拉", st['td_l']), Paragraph("先扫地址或读已知器件，确认第9拍SDA被从机拉低。", st['td_l'])],
+        [Paragraph("UART乱码", st['td']), Paragraph("波特率计数不准、收发线接反、数据位顺序或停止位错误", st['td_l']), Paragraph("先发送固定字符串，核对115200/8N1和50MHz计数值434。", st['td_l'])],
+        [Paragraph("SPI读回全FF/全00", st['td']), Paragraph("CS未选中、CPOL/CPHA错、MISO未采样、Flash仍忙", st['td_l']), Paragraph("先读W25Q128 JEDEC ID 0x9F，再轮询状态寄存器WIP。", st['td_l'])],
+        [Paragraph("仿真正常板上偶发死机", st['td']), Paragraph("跨时钟域亚稳态、异步输入未同步、计数器边界遗漏", st['td_l']), Paragraph("给外部输入加两级同步器，状态跳转条件全部打一拍观察。", st['td_l'])],
+    ]
+    t = Table(faults, colWidths=[3.3*cm, 5.6*cm, 6.1*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(table_caption(st, "常见板上现象排查表"))
+    story.append(t)
+    story.append(PageBreak())
     return story
 
 # ==================== 目录（带页码） ====================
@@ -377,7 +416,7 @@ def build_toc(st):
 
     # TOC条目：key = chapter_pages中的key
     toc_items = [
-        ("front", "出版说明与赛场速查卡", True),
+        ("front", "出版说明、速查卡与调试清单", True),
         ("ch1",  "第一章  硬件平台概览", True),
         ("ch1_1","1.1  DP2026 FPGA竞赛实训平台", False),
         ("ch1_2","1.2  硬件资源配置", False),
