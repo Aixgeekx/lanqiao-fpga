@@ -13,6 +13,7 @@
 - `watch_and_push.ps1`：持续监视项目变更并自动提交、拉取、推送到 `origin/main`，日志和 PID 分别写入 `git_watch_push.log`、`git_watch_push.pid`。
 - `release_version.ps1`：读取 `VERSION` 或指定版本号，创建 `vX.Y.Z` Git 标签并推送到远程仓库。
 - `patch_table_numbers.py`：一次性补丁工具，用于给教材生成脚本增加图表编号相关函数和样式。
+- `patch_exam_analysis.py`：一次性补丁工具，用于把真题结构化解析段落插入教材生成脚本。
 
 ## 当前 PDF 状态
 
@@ -21,6 +22,7 @@
 - 题面素材：已嵌入 9 组真题/模拟题，共 46 页图片，均经过 JPEG 缓存压缩。
 - 最近验证：`python -m py_compile Aix_tools/generate_textbook_v3.py` 与 `python Aix_tools/generate_textbook_v3.py` 均通过；关键字命中“零基础14天学习路线”“Vivado工程创建流程”“真题训练索引与错题复盘表”“错题复盘模板”“官方资料依据速查”。
 - `extracted_16national.txt`：第16届 FPGA 国赛题面文字抽取结果。
+- `exam_analysis_16national.md`：第16届 FPGA 国赛题目架构拆解、算法模块和实现要点解析。
 - `extracted_17ps.txt`：第17届 FPGA 省赛客观题文字抽取结果。
 - `extracted_17pd.txt`：第17届 FPGA 省赛程序设计题文字抽取结果。
 - `exam_analysis_17ps.md`：第17届 FPGA 省赛客观题答案解析和知识点索引。

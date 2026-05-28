@@ -23,3 +23,9 @@
 - **原因**：原PDF文字层是题面流式文本，缺少章节层级和表格结构，ReportLab按正文排版后可读性差。
 - **解决**：改为“结构化摘要表 + FSM速查表 + 完整扫描题面图片”，既保留完整题面，又提升纸质阅读效率。
 - **教训**：扫描题和原题文字不能机械堆入教材，出版稿应先做结构化整理，再保留原题作为附图或题面页。
+
+### 2026-05-28 ReportLab嵌入大PNG导致MemoryError
+- **现象**：生成教材第二遍构建 PDF 时，在 `asciiBase85Encode` 阶段触发 `MemoryError`。
+- **原因**：46 张扫描题面 PNG 原图直接嵌入 ReportLab，两遍构建同时保留大量图片对象，内存占用过高。
+- **解决**：新增 `compressed_exam_image()`，先把题面 PNG 压缩为 JPEG 缓存到 `Aix_tools/pdf_assets/exam_images`，再嵌入 PDF；第一遍构建后删除 `content_story`、`doc1` 并执行 `gc.collect()`。
+- **教训**：教材生成包含大量扫描页时，必须先建立压缩缓存，再进入两遍页码生成流程，不能直接把原始大图塞进 story。

@@ -1235,6 +1235,46 @@ SCL:       _|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_
         "本节把已提取的扫描题面逐页嵌入教材，便于离线复习和对照训练。扫描页主要来自四梯练习系统的个人练习结果解析，题型以客观选择题为主，覆盖FPGA基础、Verilog语法、组合/时序逻辑、复位、PLL、计数器、通信协议和外设应用。由于这些PDF没有可抽取文字层，本版采用原图保真嵌入，后续迭代会继续补充人工文字化解析。",
         "使用方法：先遮住正确答案独立作答，再对照页内答案；错题不要只记选项，要回到本章前面的协议、状态机和时序原理重新解释一遍。能够用自己的话解释错误原因，比单纯记住答案更接近赛场可迁移能力。"
     ], st)
+
+    # ==================== 第17届省赛客观题逐题解析 ====================
+    story.append(Paragraph("第17届省赛客观题逐题解析", st['sub_title']))
+    story.append(Paragraph("以下为10道客观题的正确答案和逐题分析，每题1.5分，共15分。错题不要只记选项，要回到对应章节重新理解原理。", st['body']))
+    obj_qa = [
+        ("01", "FPGA内部资源包含哪些", "ABCD", "FPGA四大核心资源：RAM(BRAM)、布线资源、可编程逻辑块(CLB)、可编程IO单元(IOB)。"),
+        ("02", "FPGA复位电路说法", "ACD", "异步复位立即生效(A对)，但抗干扰不如同步复位(B错)；可设高低有效(C对)；同步复位需时钟沿(D对)。"),
+        ("03", "SPI通信协议说法", "AB", "SPI支持全双工(A对)、有独立SCK(B对)；用CS片选而非地址(C错)；无ACK机制(D错)。"),
+        ("04", "移位寄存器说法", "BCD", "移位寄存器是时序电路(A错)；可由触发器级联(B对)、实现延迟(C对)、串并转换(D对)。"),
+        ("05", "差分信号线优点", "ABD", "抗共模干扰(A对)、降EMI(B对)；差分需两根线(C错)；低压高速(D对)。"),
+        ("06", "RS-232串口说法", "AC", "负逻辑电平(A对)；单端信号非差分(B错)；异步无时钟(C对)；TTL需电平转换(D错)。"),
+        ("07", "USB2.0 ESD防护参数", "ABC", "结电容(A)、导通电压(B)、封装寄生(C)是关键；散热功率(D)非关键。"),
+        ("08", "卡诺图化简目的", "BC", "找最简表达式(B对)、减少逻辑门(C对)；与时序违例(A)和工作频率(D)无关。"),
+        ("09", "I2C 400kHz发4KB需时", "B", "4096字节x9时钟/字节=36864, 36866/400kHz\u224892ms。"),
+        ("10", "仿真正常硬件偶尔死机", "CD", "电源噪声(C)和跨时钟域亚稳态(D)是常见硬件独有bug。"),
+    ]
+    for num, question, answer, explanation in obj_qa:
+        story.append(Paragraph(f"<b>{num}. {question}</b>  \u2192 {answer}", st['body']))
+        story.append(Paragraph(explanation, st['comment']))
+
+    # ==================== 第17届省赛设计题实现指南 ====================
+    story.append(Paragraph("第17届省赛设计题实现指南", st['sub_title']))
+    story.append(Paragraph("串行工序控制器：IDLE\u2192LOAD\u2192PROCESS\u2192INSPECT\u2192UNLOAD循环，支持N次循环、暂停恢复、ADC阈值检测和1kHz PWM输出。以下为关键实现要点。", st['body']))
+
+    design_rows = [
+        [Paragraph("设计要素", st['th']), Paragraph("具体要求", st['th']), Paragraph("实现抓手", st['th'])],
+        [Paragraph("状态机", st['td']), Paragraph("6状态：IDLE/LOAD/PROCESS/INSPECT/UNLOAD/ERROR", st['td_l']), Paragraph("三段式FSM，跳转条件见状态表", st['td_l'])],
+        [Paragraph("倒计时", st['td']), Paragraph("LOAD/UNLOAD=5秒，PROCESS/INSPECT=8秒", st['td_l']), Paragraph("50MHz计数器，状态切换时重载", st['td_l'])],
+        [Paragraph("按键有效性", st['td']), Paragraph("S1/S2仅IDLE有效，S3仅工序状态有效，S4仅ERROR有效", st['td_l']), Paragraph("用state条件门控消抖后的按键脉冲", st['td_l'])],
+        [Paragraph("PWM输出", st['td']), Paragraph("PROCESS: 1kHz 90%占空比；INSPECT: 1kHz 10%占空比", st['td_l']), Paragraph("50000周期计数器，比较阈值切换", st['td_l'])],
+        [Paragraph("ERROR触发", st['td']), Paragraph("INSPECT中ADC<32立即跳ERROR", st['td_l']), Paragraph("在INSPECT状态内检测ADC值", st['td_l'])],
+        [Paragraph("LED指示", st['td']), Paragraph("LD1-LD5各对应一个工序，LD6在ERROR时0.2s闪烁", st['td_l']), Paragraph("LD6用10M周期计数器翻转", st['td_l'])],
+    ]
+    t = Table(design_rows, colWidths=[2.5*cm, 5.5*cm, 6*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(table_caption(st, "17届省赛设计题关键实现要素"))
+    story.append(t)
+
     add_exam_training_index(story, st)
     summaries = {
         "第十六届 蓝桥杯（电子类）FPGA设计与开发省赛真题": "省赛真题客观题，重点覆盖逻辑门、D触发器、PLL、Verilog语法、FPGA资源和基础时序概念。",
