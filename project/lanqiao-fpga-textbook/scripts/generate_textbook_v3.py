@@ -404,6 +404,63 @@ def build_front_matter(st):
     story.append(table_caption(st, "常见板上现象排查表"))
     story.append(t)
     story.append(PageBreak())
+
+    story.append(Paragraph("Verilog综合规则与赛场写法清单", st['ch_title']))
+    story.append(DecorLine())
+    story.append(Paragraph("初学者写Verilog时，最容易把它当成C语言顺序程序。赛场上必须记住：能下载到FPGA里的不是“语句”，而是由语句描述出的触发器、组合逻辑、存储器和连线。下面这页用于快速判断代码是否适合综合，以及报错时该先改哪里。", st['quote']))
+    synth = [
+        [Paragraph("写法", st['th']), Paragraph("综合含义", st['th']), Paragraph("赛场建议", st['th'])],
+        [Paragraph("wire", st['td']), Paragraph("连续连线，通常由assign或模块输出驱动", st['td_l']), Paragraph("组合表达式和子模块输出优先用wire。", st['td_l'])],
+        [Paragraph("reg", st['td']), Paragraph("在always块中被赋值的信号，不一定都是触发器", st['td_l']), Paragraph("时序always里的reg多为触发器；组合always里的reg只是组合逻辑临时量。", st['td_l'])],
+        [Paragraph("assign", st['td']), Paragraph("连续赋值，右侧变化会立刻反映到左侧", st['td_l']), Paragraph("简单组合逻辑用assign，避免写多余always。", st['td_l'])],
+        [Paragraph("always @(posedge clk)", st['td']), Paragraph("时序逻辑，综合为触发器", st['td_l']), Paragraph("状态、计数器、寄存器数组写入都放这里。", st['td_l'])],
+        [Paragraph("always @(*)", st['td']), Paragraph("组合逻辑，综合为LUT和连线", st['td_l']), Paragraph("先给默认值，再写case/if，避免锁存器。", st['td_l'])],
+        [Paragraph("<=", st['td']), Paragraph("非阻塞赋值，时钟边沿统一更新", st['td_l']), Paragraph("时序always一律用非阻塞赋值。", st['td_l'])],
+        [Paragraph("=", st['td']), Paragraph("阻塞赋值，按语句顺序立即生效", st['td_l']), Paragraph("组合always可用；不要在同一时序块里混用。", st['td_l'])],
+    ]
+    t = Table(synth, colWidths=[3*cm, 5.8*cm, 6.2*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(table_caption(st, "Verilog可综合写法速查"))
+    story.append(t)
+
+    story.append(Paragraph("常见综合报错与修正", st['sec_title']))
+    fixes = [
+        [Paragraph("现象", st['th']), Paragraph("根因", st['th']), Paragraph("修正动作", st['th'])],
+        [Paragraph("multiple drivers", st['td']), Paragraph("同一个reg或wire被多个always/assign驱动", st['td_l']), Paragraph("让每个寄存器只在一个always块中赋值。", st['td_l'])],
+        [Paragraph("latch inferred", st['td']), Paragraph("组合always没有覆盖所有分支", st['td_l']), Paragraph("always @(*)开头先写默认值，case加default。", st['td_l'])],
+        [Paragraph("端口未连接", st['td']), Paragraph("模块例化端口名拼错或漏接", st['td_l']), Paragraph("用命名端口连接，按模块声明逐项核对。", st['td_l'])],
+        [Paragraph("位宽截断", st['td']), Paragraph("左右位宽不一致，综合自动截断或补零", st['td_l']), Paragraph("给常数写明确位宽，如8'd0、16'd50000。", st['td_l'])],
+        [Paragraph("仿真与板上不一致", st['td']), Paragraph("初值依赖、异步输入未同步、复位条件不完整", st['td_l']), Paragraph("所有关键寄存器写复位值，外部输入先同步。", st['td_l'])],
+    ]
+    t = Table(fixes, colWidths=[3.3*cm, 5.8*cm, 5.9*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(table_caption(st, "常见综合报错修正表"))
+    story.append(t)
+
+    story.append(Paragraph("赛场默认模板", st['sec_title']))
+    story.append(Preformatted("""// 时序逻辑：只在时钟沿更新，复位给确定初值
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        cnt <= 16'd0;
+    end else begin
+        cnt <= cnt + 1'b1;
+    end
+end
+
+// 组合逻辑：先默认，后分支，避免锁存器
+always @(*) begin
+    next_state = state;
+    case (state)
+        IDLE: if (start) next_state = WORK;
+        WORK: if (done)  next_state = IDLE;
+        default: next_state = IDLE;
+    endcase
+end""", st['code']))
+    story.append(PageBreak())
     return story
 
 # ==================== 目录（带页码） ====================
@@ -416,7 +473,7 @@ def build_toc(st):
 
     # TOC条目：key = chapter_pages中的key
     toc_items = [
-        ("front", "出版说明、速查卡与调试清单", True),
+        ("front", "出版说明、速查卡、调试与语法清单", True),
         ("ch1",  "第一章  硬件平台概览", True),
         ("ch1_1","1.1  DP2026 FPGA竞赛实训平台", False),
         ("ch1_2","1.2  硬件资源配置", False),
