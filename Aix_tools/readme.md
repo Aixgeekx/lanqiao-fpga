@@ -7,7 +7,7 @@
 - `extract_title_docs.py`：生成 `title_docs_extract.md` 的辅助脚本。
 - `template_memory_guide.md`：CT137X 模板记忆与赛场应用手册。
 - `top_syntax.vvp`：`iverilog -g2005` 语法检查产物，可删除后重新生成。
-- `generate_textbook_v3.py`：教材 PDF 主生成脚本。当前版本已修复附录调用，目录页码第一遍加入占位页，加入出版说明、纸质使用建议、零基础14天学习路线、赛场速查卡、赛场上板调试清单、Verilog综合规则与赛场写法清单、Vivado工程创建流程、第三章“核心原理与真题实战”、第16届国赛完整结构化整理、第17届省赛结构化整理、真题训练索引与错题复盘表，并自动嵌入 `真题模拟题/extracted_images` 下 9 组扫描题面图片。
+- `generate_textbook_v3.py`：教材 PDF 主生成脚本。当前版本已修复附录调用，目录页码第一遍加入占位页，加入出版说明、纸质使用建议、零基础14天学习路线、赛场速查卡、赛场上板调试清单、Verilog综合规则与赛场写法清单、50MHz计数参数与定时器写法速查、Vivado工程创建流程、第三章“核心原理与真题实战”、第16届国赛完整结构化整理、第17届省赛结构化整理、真题训练索引与错题复盘表，并自动嵌入 `真题模拟题/extracted_images` 下 9 组扫描题面图片。
 - `pdf_assets/exam_images/`：题面图片 JPEG 压缩缓存目录。脚本会把 46 张扫描 PNG 压缩后再嵌入 PDF，避免 ReportLab 两遍生成时占用过多内存。
 - `pdf_check/`：新版 PDF 渲染抽检图片目录，用于检查目录页、协议讲解页、题面页和代码页是否排版正常。
 - `watch_and_push.ps1`：持续监视项目变更并自动提交、拉取、推送到 `origin/main`，日志和 PID 分别写入 `git_watch_push.log`、`git_watch_push.pid`。
@@ -18,9 +18,9 @@
 ## 当前 PDF 状态
 
 - 输出文件：`results/蓝桥杯FPGA开发教程_详细注释版.pdf`
-- 当前规模：115 页，约 7.0 MB，正文可抽取字符 132605 个。
+- 当前规模：116 页，约 7.0 MB，正文可抽取字符 133807 个。
 - 题面素材：已嵌入 9 组真题/模拟题，共 46 页图片，均经过 JPEG 缓存压缩。
-- 最近验证：`python -m py_compile Aix_tools/generate_textbook_v3.py` 与 `python Aix_tools/generate_textbook_v3.py` 均通过；关键字命中“零基础14天学习路线”“赛场上板调试清单”“Verilog综合规则与赛场写法清单”“常见综合报错修正表”“Vivado工程创建流程”“真题训练索引与错题复盘表”“错题复盘模板”“官方资料依据速查”。
+- 最近验证：`python -m py_compile Aix_tools/generate_textbook_v3.py` 与 `python Aix_tools/generate_textbook_v3.py` 均通过；关键字命中“零基础14天学习路线”“赛场上板调试清单”“Verilog综合规则与赛场写法清单”“50MHz计数参数与定时器写法速查”“50MHz常用计数参数表”“Vivado工程创建流程”“真题训练索引与错题复盘表”“错题复盘模板”“官方资料依据速查”。
 
 ## 真题分析辅助文件
 
