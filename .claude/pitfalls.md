@@ -12,6 +12,12 @@
 - **解决**：新增 `MODULE_ORDER`，Driver/User 文件按教学顺序读取，目录和正文编号恢复一致。
 - **教训**：生成类文档的目录、正文和页码必须共享同一份排序配置，不能一处硬编码一处自动排序。
 
+### 2026-05-28 Windows PowerShell 读取 UTF-8 无 BOM 脚本乱码
+- **现象**：`powershell -File Aix_tools\release_version.ps1` 解析中文异常消息时报 `Unexpected token`。
+- **原因**：Windows PowerShell 5.1 默认按本地代码页读取无 BOM UTF-8，中文字符串被错误解码。
+- **解决**：发布脚本内部异常消息改为 ASCII，保证 `powershell.exe` 和 `pwsh` 都能执行。
+- **教训**：需要兼容 Windows PowerShell 5.1 的 `.ps1` 文件尽量使用 ASCII，或明确使用带 BOM 的 UTF-8。
+
 ### 2026-05-27 PDF文字层直接铺正文影响纸质阅读
 - **现象**：第17届省赛客观题和程序设计题可抽取文字，但直接塞入正文后页面过密，不适合纸质手册和出版排版。
 - **原因**：原PDF文字层是题面流式文本，缺少章节层级和表格结构，ReportLab按正文排版后可读性差。
