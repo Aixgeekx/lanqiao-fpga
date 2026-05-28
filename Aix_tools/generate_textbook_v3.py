@@ -7,6 +7,7 @@
 
 import os
 import re
+import gc
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm, cm
@@ -162,6 +163,38 @@ class ColorBar(Flowable):
             self.canv.setFillColor(c)
             self.canv.rect(i*seg, 0, seg+1, self.height, fill=1, stroke=0)
 
+class ChapterSideBar(Flowable):
+    """章节标题左侧彩色竖条装饰"""
+    def __init__(self, height=10*mm, width=3*mm, color=None):
+        Flowable.__init__(self)
+        self.width = width
+        self.height = height
+        self.color = color or C['primary']
+    def draw(self):
+        self.canv.setFillColor(self.color)
+        self.canv.roundRect(0, 0, self.width, self.height, 1, fill=1, stroke=0)
+
+class CoverFrame(Flowable):
+    """封面装饰边框"""
+    def __init__(self, width=16*cm, height=22*cm):
+        Flowable.__init__(self)
+        self.width = width
+        self.height = height
+    def draw(self):
+        c = self.canv
+        # 外框
+        c.setStrokeColor(C['secondary'])
+        c.setLineWidth(2)
+        c.roundRect(0, 0, self.width, self.height, 3, fill=0, stroke=1)
+        # 内框
+        c.setStrokeColor(C['accent'])
+        c.setLineWidth(0.5)
+        c.roundRect(3*mm, 3*mm, self.width-6*mm, self.height-6*mm, 2, fill=0, stroke=1)
+        # 四角装饰
+        for x, y in [(2*mm, 2*mm), (self.width-5*mm, 2*mm), (2*mm, self.height-5*mm), (self.width-5*mm, self.height-5*mm)]:
+            c.setFillColor(C['primary'])
+            c.rect(x, y, 3*mm, 3*mm, fill=1, stroke=0)
+
 # ==================== 页眉页脚 ====================
 def header_footer(canvas, doc):
     canvas.saveState()
@@ -235,7 +268,9 @@ def get_module_desc(fname):
 # ==================== 封面 ====================
 def build_cover(st):
     story = []
-    story.append(Spacer(1, 2.5*cm))
+    story.append(Spacer(1, 1*cm))
+    story.append(CoverFrame())
+    story.append(Spacer(1, 1.5*cm))
     story.append(ColorBar(colors=[C['primary'], C['secondary'], C['accent'], C['secondary'], C['primary']]))
     story.append(Spacer(1, 1.5*cm))
     story.append(Paragraph("极道工作室  出品", st['cover_info']))
@@ -388,21 +423,24 @@ def build_toc(st):
         ("appendix", "附录  参考表格", True),
     ]
 
+    toc_dot_style = ParagraphStyle('TOCDOT', fontName='MSYH', fontSize=7, textColor=C['muted'], alignment=TA_CENTER)
     toc_data = []
     for key, title, is_chapter in toc_items:
         if is_chapter:
             toc_data.append([
                 Paragraph(f"<b>{title}</b>", st['toc_ch']),
+                "",
                 Paragraph(f"<b>{chapter_pages.get(key, '…')}</b>",
                           ParagraphStyle('TCP', fontName='SimHei', fontSize=11, textColor=C['primary'], alignment=TA_RIGHT))
             ])
         else:
             toc_data.append([
                 Paragraph(title, st['toc_entry']),
+                Paragraph("· " * 12, toc_dot_style),
                 Paragraph(str(chapter_pages.get(key, '…')), st['toc_page'])
             ])
 
-    table = Table(toc_data, colWidths=[13.5*cm, 2.5*cm])
+    table = Table(toc_data, colWidths=[9*cm, 4*cm, 3*cm])
     table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('TOPPADDING', (0,0), (-1,-1), 2),
@@ -886,12 +924,30 @@ def exam_image_groups(base_dir):
     return [(name, sorted(groups[name], key=page_no)) for name in order if name in groups]
 
 def add_exam_image(story, path, st):
-    with PILImage.open(path) as img:
+    image_path = compressed_exam_image(path)
+    with PILImage.open(image_path) as img:
         w, h = img.size
     max_w, max_h = 16.2*cm, 21.5*cm
     scale = min(max_w / w, max_h / h)
-    story.append(RLImage(path, width=w*scale, height=h*scale))
+    story.append(RLImage(image_path, width=w*scale, height=h*scale))
     story.append(Paragraph(os.path.basename(path), st['caption']))
+
+def compressed_exam_image(path, max_width=1200, quality=78):
+    marker = os.sep + "真题模拟题" + os.sep
+    base_dir = os.path.abspath(path).split(marker)[0]
+    cache_dir = os.path.join(base_dir, "Aix_tools", "pdf_assets", "exam_images")
+    os.makedirs(cache_dir, exist_ok=True)
+    name = os.path.splitext(os.path.basename(path))[0] + ".jpg"
+    out_path = os.path.join(cache_dir, name)
+    if os.path.exists(out_path) and os.path.getmtime(out_path) >= os.path.getmtime(path):
+        return out_path
+    with PILImage.open(path) as img:
+        img = img.convert("RGB")
+        if img.width > max_width:
+            ratio = max_width / img.width
+            img = img.resize((max_width, int(img.height * ratio)), PILImage.Resampling.LANCZOS)
+        img.save(out_path, "JPEG", quality=quality, optimize=True)
+    return out_path
 
 def read_pdf_text(base_dir, filename):
     if fitz is None:
@@ -1179,6 +1235,7 @@ SCL:       _|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_
         "本节把已提取的扫描题面逐页嵌入教材，便于离线复习和对照训练。扫描页主要来自四梯练习系统的个人练习结果解析，题型以客观选择题为主，覆盖FPGA基础、Verilog语法、组合/时序逻辑、复位、PLL、计数器、通信协议和外设应用。由于这些PDF没有可抽取文字层，本版采用原图保真嵌入，后续迭代会继续补充人工文字化解析。",
         "使用方法：先遮住正确答案独立作答，再对照页内答案；错题不要只记选项，要回到本章前面的协议、状态机和时序原理重新解释一遍。能够用自己的话解释错误原因，比单纯记住答案更接近赛场可迁移能力。"
     ], st)
+    add_exam_training_index(story, st)
     summaries = {
         "第十六届 蓝桥杯（电子类）FPGA设计与开发省赛真题": "省赛真题客观题，重点覆盖逻辑门、D触发器、PLL、Verilog语法、FPGA资源和基础时序概念。",
         "第十七届蓝桥杯FPGA省赛真题": "第17届省赛客观题，共10题，覆盖FPGA资源、复位、SPI、移位寄存器、差分信号、RS-232、ESD、卡诺图、I2C吞吐和亚稳态。",
@@ -1396,6 +1453,9 @@ def main():
                              topMargin=2*cm, bottomMargin=2.5*cm)
     doc1.build(list(content_story), onFirstPage=cover_header_footer, onLaterPages=header_footer)
     print(f"Pass 1 done, page map: {chapter_pages}")
+    del content_story
+    del doc1
+    gc.collect()
 
     # ========== 第二遍：带页码的目录 + 正文 ==========
     global table_counter, figure_counter

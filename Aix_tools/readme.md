@@ -10,3 +10,5 @@
 - `generate_textbook_v3.py`：教材 PDF 主生成脚本。当前版本已修复附录调用，目录页码第一遍加入占位页，加入出版说明、赛场速查卡、第三章“核心原理与真题实战”、第16届国赛完整结构化整理、第17届省赛结构化整理，并自动嵌入 `真题模拟题/extracted_images` 下 9 组扫描题面图片。
 - `pdf_check/`：新版 PDF 渲染抽检图片目录，用于检查目录页、协议讲解页、题面页和代码页是否排版正常。
 - `watch_and_push.ps1`：持续监视项目变更并自动提交、拉取、推送到 `origin/main`，日志和 PID 分别写入 `git_watch_push.log`、`git_watch_push.pid`。
+- `release_version.ps1`：读取 `VERSION` 或指定版本号，创建 `vX.Y.Z` Git 标签并推送到远程仓库。
+- `patch_table_numbers.py`：一次性补丁工具，用于给教材生成脚本增加图表编号相关函数和样式。
