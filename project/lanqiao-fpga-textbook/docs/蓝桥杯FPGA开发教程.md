@@ -80,7 +80,7 @@ SRAM 是异步并口存储器，读写时要满足地址建立、访问和保持
 - 板卡资料索引：`docs/title_docs_extract.md`
 - 项目阅读总结：`docs/project_reading_summary.md`
 
-当前 PDF 为 112 页，约 6.9 MB。脚本会把 46 页扫描题面图片压缩缓存为 JPEG 后再嵌入 PDF，避免大量原始 PNG 在两遍生成流程中造成内存压力。
+当前 PDF 为 113 页，约 6.9 MB。脚本会把 46 页扫描题面图片压缩缓存为 JPEG 后再嵌入 PDF，避免大量原始 PNG 在两遍生成流程中造成内存压力。
 
 ## 官方资料依据
 

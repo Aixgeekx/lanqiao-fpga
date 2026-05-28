@@ -18,7 +18,7 @@
 ## 当前 PDF 状态
 
 - 输出文件：`results/蓝桥杯FPGA开发教程_详细注释版.pdf`
-- 当前规模：112 页，约 6.9 MB，正文可抽取字符 128930 个。
+- 当前规模：113 页，约 6.9 MB，正文可抽取字符 130162 个。
 - 题面素材：已嵌入 9 组真题/模拟题，共 46 页图片，均经过 JPEG 缓存压缩。
 - 最近验证：`python -m py_compile Aix_tools/generate_textbook_v3.py` 与 `python Aix_tools/generate_textbook_v3.py` 均通过；关键字命中“零基础14天学习路线”“Vivado工程创建流程”“真题训练索引与错题复盘表”“错题复盘模板”“官方资料依据速查”。
 
