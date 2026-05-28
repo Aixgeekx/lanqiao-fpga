@@ -461,6 +461,50 @@ always @(*) begin
     endcase
 end""", st['code']))
     story.append(PageBreak())
+
+    story.append(Paragraph("50MHz计数参数与定时器写法速查", st['ch_title']))
+    story.append(DecorLine())
+    story.append(Paragraph("CT137X主时钟为50MHz，一个时钟周期是20ns。所有延时、闪烁、扫描、PWM和串口波特率，本质都是把“时间”换算成“时钟个数”。赛场上不要临时心算，优先查本表，再把参数写成localparam，减少边界错误。", st['quote']))
+    timing = [
+        [Paragraph("用途", st['th']), Paragraph("目标", st['th']), Paragraph("50MHz计数", st['th']), Paragraph("常用写法", st['th'])],
+        [Paragraph("1us节拍", st['td']), Paragraph("1us", st['td']), Paragraph("50周期", st['td']), Paragraph("cnt == 49", st['td_l'])],
+        [Paragraph("1ms节拍", st['td']), Paragraph("1ms", st['td']), Paragraph("50,000周期", st['td']), Paragraph("cnt == 49_999", st['td_l'])],
+        [Paragraph("按键消抖", st['td']), Paragraph("20ms", st['td']), Paragraph("1,000,000周期", st['td']), Paragraph("cnt == 999_999", st['td_l'])],
+        [Paragraph("数码管切位", st['td']), Paragraph("1kHz", st['td']), Paragraph("50,000周期", st['td']), Paragraph("8位平均每位125Hz", st['td_l'])],
+        [Paragraph("LED报警闪烁", st['td']), Paragraph("0.2s", st['td']), Paragraph("10,000,000周期", st['td']), Paragraph("cnt == 9_999_999后翻转", st['td_l'])],
+        [Paragraph("1秒倒计时", st['td']), Paragraph("1s", st['td']), Paragraph("50,000,000周期", st['td']), Paragraph("cnt == 49_999_999", st['td_l'])],
+        [Paragraph("UART 115200", st['td']), Paragraph("8N1", st['td']), Paragraph("约434周期/bit", st['td']), Paragraph("发送每434拍换位，接收半位217拍采样", st['td_l'])],
+        [Paragraph("1kHz PWM 90%", st['td']), Paragraph("周期1ms", st['td']), Paragraph("高45,000 / 周期50,000", st['td']), Paragraph("pwm_cnt < 45_000", st['td_l'])],
+        [Paragraph("1kHz PWM 10%", st['td']), Paragraph("周期1ms", st['td']), Paragraph("高5,000 / 周期50,000", st['td']), Paragraph("pwm_cnt < 5_000", st['td_l'])],
+    ]
+    t = Table(timing, colWidths=[3*cm, 2.6*cm, 4*cm, 5.4*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(table_caption(st, "50MHz常用计数参数表"))
+    story.append(t)
+
+    story.append(Paragraph("计数器边界写法", st['sec_title']))
+    add_paras(story, [
+        "如果一个事件需要N个时钟周期，计数器通常从0数到N-1，因此比较值应写成N-1，而不是N。比如1ms需要50,000个周期，计数器取值范围是0到49,999；当cnt==49_999时产生tick并清零。",
+        "位宽按最大计数值选择：1秒需要计到49,999,999，小于2^26，所以26位足够；20ms需要计到999,999，小于2^20，所以20位足够。为了赛场稳妥，参数可用localparam integer定义，寄存器位宽略宽一两位也可以。"
+    ], st)
+    story.append(Preformatted("""localparam integer CLK_HZ = 50_000_000;
+localparam integer TICK_1MS = CLK_HZ / 1000;
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        cnt_1ms <= 16'd0;
+        tick_1ms <= 1'b0;
+    end else if (cnt_1ms == TICK_1MS - 1) begin
+        cnt_1ms <= 16'd0;
+        tick_1ms <= 1'b1;
+    end else begin
+        cnt_1ms <= cnt_1ms + 1'b1;
+        tick_1ms <= 1'b0;
+    end
+end""", st['code']))
+    story.append(PageBreak())
     return story
 
 # ==================== 目录（带页码） ====================
@@ -473,7 +517,7 @@ def build_toc(st):
 
     # TOC条目：key = chapter_pages中的key
     toc_items = [
-        ("front", "出版说明、速查卡、调试与语法清单", True),
+        ("front", "出版说明、速查卡、调试与计数清单", True),
         ("ch1",  "第一章  硬件平台概览", True),
         ("ch1_1","1.1  DP2026 FPGA竞赛实训平台", False),
         ("ch1_2","1.2  硬件资源配置", False),
