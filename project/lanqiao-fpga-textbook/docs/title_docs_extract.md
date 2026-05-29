@@ -1,6 +1,6 @@
 # title docs extraction
 
-## PDF: title\17444501.pdf
+## PDF: title\[REDACTED_EXAM_ID].pdf
 - pages: 1
 - scan_mode: full
 - scanned_pages: 1

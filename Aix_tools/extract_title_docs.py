@@ -25,7 +25,7 @@ def clean(text: str) -> str:
 
 def pages_to_scan(path: Path, page_count: int) -> tuple[list[int], str]:
     name = path.name.lower()
-    if page_count <= 80 or "17444501" in name or "比赛手册" in name or "ct137x" in name or "seg_table" in name:
+    if page_count <= 80 or "比赛手册" in name or "ct137x" in name or "seg_table" in name:
         return list(range(page_count)), "full"
     sample = sorted(set(list(range(min(5, page_count))) + [page_count - 1]))
     return sample, "sample"
