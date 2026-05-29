@@ -2,7 +2,7 @@
 
 > 蓝桥杯 FPGA 设计与开发（AMD/Xilinx 平台）**国一工程模板**与**零基础教学**资源库。从零基础到国赛一等奖，一套工程模板、16 个驱动模块、真题全覆盖。
 
-**适用平台**：CT137X 竞赛平台（AMD/Xilinx FPGA）　　**当前版本**：v0.2.3
+**适用平台**：CT137X 竞赛平台（AMD/Xilinx FPGA）　　**当前版本**：v0.2.4
 
 ---
 
@@ -22,10 +22,10 @@
 ## 教材与发行包
 
 - 最新 PDF：`results/蓝桥杯FPGA开发教程_详细注释版.pdf`
-- 轻量发布包：`releases/lanqiao-fpga-textbook-pdf-v0.2.3.zip`
-- 完整发布包：`releases/lanqiao-fpga-textbook-v0.2.3.zip`
+- 轻量发布包：`releases/lanqiao-fpga-textbook-pdf-v0.2.4.zip`
+- 完整发布包：`releases/lanqiao-fpga-textbook-v0.2.4.zip`
 
-当前 PDF 为 119 页，约 7.0 MB，正文可抽取字符 139007 个；35 个表格全部带“表 N”编号，46 个题面页全部带“图 N”编号。本轮新增“扫描题面阅读规范”和“官方资料查证路径”，并给扫描题面增加出版式边框、源图标注和试卷名页号图题，更适合纸质训练、赛场复盘和出版预备稿审校。
+当前 PDF 为 121 页，约 7.0 MB，正文可抽取字符 140899 个；39 个表格全部带“表 N”编号，46 个题面页全部带“图 N”编号。本轮新增“上板故障定位流程”“调试信号分配建议”“真题纸面批注模板”和“真题批注完成检查”，更适合赛场纸质排查、限时训练和出版预备稿审校。
 
 ---
 
@@ -159,11 +159,11 @@ Stop-Process -Id (Get-Content .\Aix_tools\git_watch_push.pid)
 # 1. 修改 VERSION 和 CHANGELOG.md
 # 2. 提交并推送
 git add VERSION CHANGELOG.md
-git commit -m "chore: release v0.2.3"
+git commit -m "chore: release v0.2.4"
 git push
 
 # 3. 创建 Git 标签
-powershell -NoProfile -ExecutionPolicy Bypass -File .\Aix_tools\release_version.ps1 -Version 0.2.3
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Aix_tools\release_version.ps1 -Version 0.2.4
 ```
 
 规则：修 bug / 改文档 → 修订版本（0.2.0 → 0.2.1）；增加功能 / 章节 → 次版本（0.2.0 → 0.3.0）；结构大改 → 主版本（1.0.0 → 2.0.0）。

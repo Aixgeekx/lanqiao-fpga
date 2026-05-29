@@ -437,6 +437,45 @@ def build_front_matter(st):
                            ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
     story.append(table_caption(st, "常见板上现象排查表"))
     story.append(t)
+
+    flow_block = [
+        Paragraph("上板故障定位流程", st['sec_title']),
+        Paragraph("板上现象不对时，先按可观察层级排查，不要直接改业务代码。每一步只验证一个问题：工程能不能下载、基础IO能不能独立工作、协议握手是否成立、状态机是否走到目标状态。这样能把“看起来全错”的系统拆成几个可证明的小问题。", st['body'])
+    ]
+    flow = [
+        [Paragraph("观察到的现象", st['th']), Paragraph("先判断什么", st['th']), Paragraph("下一步动作", st['th'])],
+        [Paragraph("bit生成失败", st['td']), Paragraph("综合/实现阶段是否已经报错或严重警告", st['td_l']), Paragraph("先修multiple drivers、latch inferred、端口未连接和位宽问题，不上板调业务。", st['td_l'])],
+        [Paragraph("下载失败", st['td']), Paragraph("硬件管理器是否识别器件，JTAG和电源是否正常", st['td_l']), Paragraph("换USB口、重新上电、检查开发板模式和线缆；确认后再看代码。", st['td_l'])],
+        [Paragraph("LED固定测试失败", st['td']), Paragraph("XDC端口名、管脚号、低有效极性是否正确", st['td_l']), Paragraph("用8'h55和8'haa交替测试，先证明板级输出路径正确。", st['td_l'])],
+        [Paragraph("按键触发异常", st['td']), Paragraph("物理按键是否低有效，消抖后是否只有一个脉冲", st['td_l']), Paragraph("把消抖脉冲接到LED观察，再接入状态机。", st['td_l'])],
+        [Paragraph("数码管异常", st['td']), Paragraph("段选、位选、小数点和刷新顺序是否匹配SEG_TABLE", st['td_l']), Paragraph("先固定只亮一位，再逐位扫描，不要同时调显示格式和业务数据。", st['td_l'])],
+        [Paragraph("协议外设无响应", st['td']), Paragraph("I2C ACK、SPI CS/SCLK、UART波特率是否可单独观测", st['td_l']), Paragraph("先跑最小读ID或固定字符串测试，再接入题目流程。", st['td_l'])],
+        [Paragraph("业务状态不走", st['td']), Paragraph("当前状态编号、关键计数器和done/busy信号是否符合预期", st['td_l']), Paragraph("把state低位、busy、done映射到LED或串口日志，先定位停在哪个条件。", st['td_l'])],
+        [Paragraph("偶发死机", st['td']), Paragraph("异步输入、跨时钟域、复位释放和计数边界是否安全", st['td_l']), Paragraph("外部输入先两级同步，复位统一释放，所有计数器检查N-1边界。", st['td_l'])],
+    ]
+    t = Table(flow, colWidths=[3.1*cm, 5.8*cm, 6.1*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    flow_block.extend([table_caption(st, "上板故障定位流程"), t])
+    story.append(KeepTogether(flow_block))
+
+    story.append(Paragraph("调试信号分配建议", st['sub_title']))
+    probes = [
+        [Paragraph("信号", st['th']), Paragraph("建议含义", st['th']), Paragraph("用途", st['th'])],
+        [Paragraph("LD1", st['td']), Paragraph("1Hz心跳", st['td_l']), Paragraph("证明时钟和复位释放正常。", st['td_l'])],
+        [Paragraph("LD2", st['td']), Paragraph("按键消抖脉冲", st['td_l']), Paragraph("确认一次按键只产生一次业务触发。", st['td_l'])],
+        [Paragraph("LD3-LD5", st['td']), Paragraph("state[2:0]", st['td_l']), Paragraph("快速判断状态机停在哪个状态。", st['td_l'])],
+        [Paragraph("LD6", st['td']), Paragraph("peripheral_busy", st['td_l']), Paragraph("判断I2C/SPI/UART是否卡在忙状态。", st['td_l'])],
+        [Paragraph("LD7", st['td']), Paragraph("error_flag", st['td_l']), Paragraph("显示阈值、超时、协议无ACK等异常。", st['td_l'])],
+        [Paragraph("LD8", st['td']), Paragraph("done_flag", st['td_l']), Paragraph("证明一次计算或发送流程已经闭环。", st['td_l'])],
+    ]
+    t = Table(probes, colWidths=[2.5*cm, 4.4*cm, 8.1*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(table_caption(st, "调试信号分配建议"))
+    story.append(t)
     story.append(PageBreak())
 
     story.append(Paragraph("Verilog综合规则与赛场写法清单", st['ch_title']))
@@ -1138,6 +1177,42 @@ def add_exam_reading_guide(story, st):
     story.append(table_caption(st, "扫描题面阅读标记规范"))
     story.append(t)
 
+def add_exam_annotation_template(story, st):
+    story.append(Paragraph("真题纸面批注模板", st['sub_title']))
+    story.append(Paragraph("每做一页扫描题面，都按这张模板写一遍。模板的作用不是多写字，而是强迫自己把题面语言翻译成工程语言：端口、计数值、状态、协议、显示格式和提交风险。训练时把这张表夹在题面后面，赛后只看批注就能知道错在哪里。", st['body']))
+    rows = [
+        [Paragraph("项目", st['th']), Paragraph("纸面填写", st['th']), Paragraph("工程化检查点", st['th'])],
+        [Paragraph("题组/页码", st['td']), Paragraph("__________  第 ____ 页", st['td_l']), Paragraph("对应本书图号和源图文件名，便于回查。", st['td_l'])],
+        [Paragraph("硬件对象", st['td']), Paragraph("LED / SEG / KEY / UART / I2C / SPI / ADC / RTC / SRAM / Flash：__________", st['td_l']), Paragraph("每个对象都要能找到顶层端口和驱动实例。", st['td_l'])],
+        [Paragraph("输入输出", st['td']), Paragraph("输入：__________    输出：__________", st['td_l']), Paragraph("输入先同步/消抖；输出先确认低有效或高有效。", st['td_l'])],
+        [Paragraph("时间参数", st['td']), Paragraph("____ ms / ____ s / ____ Hz / 波特率：__________", st['td_l']), Paragraph("全部换算成50MHz计数localparam。", st['td_l'])],
+        [Paragraph("状态流程", st['td']), Paragraph("IDLE → __________ → __________ → DONE/ERROR", st['td_l']), Paragraph("先画状态图，再写三段式FSM。", st['td_l'])],
+        [Paragraph("协议帧", st['td']), Paragraph("地址/命令：__________  ACK/CS/忙标志：__________", st['td_l']), Paragraph("I2C看ACK，SPI看CS和模式，UART看8N1。", st['td_l'])],
+        [Paragraph("显示格式", st['td']), Paragraph("数码管位：__________  小数点/闪烁/空白：__________", st['td_l']), Paragraph("显示格式单独写mux，不和业务状态混在一起。", st['td_l'])],
+        [Paragraph("最大风险", st['td']), Paragraph("概念 / 时序 / 极性 / 接口 / 提交：__________", st['td_l']), Paragraph("写出一个最可能扣分点，训练后复盘验证。", st['td_l'])],
+    ]
+    t = Table(rows, colWidths=[2.4*cm, 6.8*cm, 5.8*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 4), ('BOTTOMPADDING', (0,0), (-1,-1), 4)]))
+    story.append(table_caption(st, "真题纸面批注模板"))
+    story.append(t)
+
+    checklist = [
+        [Paragraph("完成标记", st['th']), Paragraph("问题", st['th']), Paragraph("通过标准", st['th'])],
+        [Paragraph("□", st['td']), Paragraph("题面里所有硬件对象是否都圈出来了？", st['td_l']), Paragraph("能逐一对应到端口、XDC或驱动文件。", st['td_l'])],
+        [Paragraph("□", st['td']), Paragraph("所有时间数字是否都换算为50MHz计数？", st['td_l']), Paragraph("写出N和N-1两个值，避免边界错。", st['td_l'])],
+        [Paragraph("□", st['td']), Paragraph("状态流程是否能用一句话解释？", st['td_l']), Paragraph("每个状态有进入条件、保持条件和退出条件。", st['td_l'])],
+        [Paragraph("□", st['td']), Paragraph("显示和通信格式是否单独列出？", st['td_l']), Paragraph("不会把显示格式、UART格式和算法计算混在同一个always里。", st['td_l'])],
+        [Paragraph("□", st['td']), Paragraph("提交包风险是否检查？", st['td_l']), Paragraph("最终ZIP能另建目录解压，PDF/工程/脚本都能打开。", st['td_l'])],
+    ]
+    t = Table(checklist, colWidths=[2.2*cm, 6.4*cm, 6.4*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('ALIGN', (0,1), (0,-1), 'CENTER'), ('TOPPADDING', (0,0), (-1,-1), 3),
+                           ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(KeepTogether([table_caption(st, "真题批注完成检查"), t]))
+
 def compressed_exam_image(path, max_width=1200, quality=78):
     marker = os.sep + "真题模拟题" + os.sep
     base_dir = os.path.abspath(path).split(marker)[0]
@@ -1479,6 +1554,7 @@ SCL:       _|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_
         "使用方法：先遮住正确答案独立作答，再对照页内答案；错题不要只记选项，要回到本章前面的协议、状态机和时序原理重新解释一遍。能够用自己的话解释错误原因，比单纯记住答案更接近赛场可迁移能力。"
     ], st)
     add_exam_reading_guide(story, st)
+    add_exam_annotation_template(story, st)
 
     # ==================== 第17届省赛客观题逐题解析 ====================
     story.append(Paragraph("第17届省赛客观题逐题解析", st['sub_title']))
