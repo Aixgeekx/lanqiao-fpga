@@ -1157,6 +1157,41 @@ def add_exam_training_index(story, st):
                            ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
     story.append(table_caption(st, "真题训练索引与错题复盘"))
     story.append(t)
+
+    story.append(Paragraph("真题模拟题训练顺序", st['sub_title']))
+    story.append(Paragraph("零基础训练不要一上来就做完整综合题。先用模拟题扫概念和语法，再用省赛客观题查漏，最后做设计题和国赛综合题。每次训练都要限制时间，因为赛场问题往往不是不会，而是来不及定位。", st['body']))
+    plan = [
+        [Paragraph("顺序", st['th']), Paragraph("题组", st['th']), Paragraph("限时", st['th']), Paragraph("训练目标", st['th']), Paragraph("通过标准", st['th'])],
+        [Paragraph("1", st['td']), Paragraph("十六届模拟I/II/III", st['td_l']), Paragraph("每套30min", st['td']), Paragraph("扫Verilog语法、组合/时序逻辑、工程流程", st['td_l']), Paragraph("错题能归类到语法、时序或硬件概念。", st['td_l'])],
+        [Paragraph("2", st['td']), Paragraph("第十六届省赛真题", st['td_l']), Paragraph("45min", st['td']), Paragraph("复核逻辑门、触发器、PLL、FPGA资源基础", st['td_l']), Paragraph("每题能说出排除错误选项的理由。", st['td_l'])],
+        [Paragraph("3", st['td']), Paragraph("第十七届省赛客观题", st['td_l']), Paragraph("25min", st['td']), Paragraph("训练SPI、I2C、RS-232、亚稳态和硬件常识", st['td_l']), Paragraph("10题至少8题正确，并能解释硬件原因。", st['td_l'])],
+        [Paragraph("4", st['td']), Paragraph("第十七届省赛设计题", st['td_l']), Paragraph("90min", st['td']), Paragraph("按状态机拆工序控制、ADC阈值、PWM和显示", st['td_l']), Paragraph("先画状态图，再写顶层模块划分。", st['td_l'])],
+        [Paragraph("5", st['td']), Paragraph("十七届模拟I/II/III", st['td_l']), Paragraph("每套35min", st['td']), Paragraph("压测同步复位、位宽、有符号数、综合语义", st['td_l']), Paragraph("能把错误对应到本书前置速查页。", st['td_l'])],
+        [Paragraph("6", st['td']), Paragraph("第16届国赛综合题", st['td_l']), Paragraph("150min", st['td']), Paragraph("完整拆采集、存储、算法、显示、串口上报", st['td_l']), Paragraph("先完成可观察最小系统，再逐步加算法。", st['td_l'])],
+    ]
+    t = Table(plan, colWidths=[1.4*cm, 3.4*cm, 2*cm, 4.2*cm, 4*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('ALIGN', (0,1), (0,-1), 'CENTER'), ('TOPPADDING', (0,0), (-1,-1), 3),
+                           ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(table_caption(st, "真题模拟题训练顺序"))
+    story.append(t)
+
+    story.append(Paragraph("训练记录栏", st['sub_title']))
+    record = [
+        [Paragraph("日期", st['th']), Paragraph("题组", st['th']), Paragraph("正确率/完成度", st['th']), Paragraph("最大问题", st['th']), Paragraph("回看章节", st['th'])],
+        [Paragraph("____", st['td']), Paragraph("____", st['td']), Paragraph("____", st['td']), Paragraph("____", st['td']), Paragraph("____", st['td'])],
+        [Paragraph("____", st['td']), Paragraph("____", st['td']), Paragraph("____", st['td']), Paragraph("____", st['td']), Paragraph("____", st['td'])],
+        [Paragraph("____", st['td']), Paragraph("____", st['td']), Paragraph("____", st['td']), Paragraph("____", st['td']), Paragraph("____", st['td'])],
+    ]
+    t = Table(record, colWidths=[2.2*cm, 3.2*cm, 3.2*cm, 3.6*cm, 2.8*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('ALIGN', (0,1), (-1,-1), 'CENTER'), ('TOPPADDING', (0,0), (-1,-1), 5),
+                           ('BOTTOMPADDING', (0,0), (-1,-1), 5)]))
+    story.append(table_caption(st, "真题训练记录栏"))
+    story.append(t)
+
     review = [
         [Paragraph("错因", st['th']), Paragraph("典型表现", st['th']), Paragraph("修正动作", st['th'])],
         [Paragraph("概念不清", st['td']), Paragraph("能选答案但说不出原因", st['td_l']), Paragraph("回到对应协议/状态机小节，用一句话解释规则。", st['td_l'])],
