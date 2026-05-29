@@ -338,6 +338,40 @@ def build_front_matter(st):
                            ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
     story.append(table_caption(st, "零基础14天学习路线"))
     story.append(t)
+
+    story.append(PageBreak())
+    story.append(Paragraph("考场时间分配与提交包检查", st['sec_title']))
+    story.append(Paragraph("蓝桥杯FPGA题目的难点不只在知识点，也在时间管理。初学者常见问题是前面调界面花太久，最后没有时间压测、保存和打包。下面两张表建议直接贴便签：一张管时间，一张管最后提交的ZIP压缩包。", st['body']))
+    time_plan = [
+        [Paragraph("时间段", st['th']), Paragraph("主要动作", st['th']), Paragraph("产出物", st['th'])],
+        [Paragraph("0-15min", st['td']), Paragraph("通读题面，圈出输入、输出、计时、显示、通信和存储要求", st['td_l']), Paragraph("模块拆分草图和端口清单", st['td_l'])],
+        [Paragraph("15-35min", st['td']), Paragraph("建立工程、加入XDC、写顶层端口和基础LED/数码管自检", st['td_l']), Paragraph("可综合、可下载的空框架", st['td_l'])],
+        [Paragraph("35-95min", st['td']), Paragraph("先实现确定性模块：按键、计数器、显示、UART或I2C底层驱动", st['td_l']), Paragraph("每个模块都有板上可观察现象", st['td_l'])],
+        [Paragraph("95-150min", st['td']), Paragraph("连接业务状态机，完成题目核心流程，保留调试LED或串口输出", st['td_l']), Paragraph("主功能闭环跑通", st['td_l'])],
+        [Paragraph("150-190min", st['td']), Paragraph("处理边界：复位、最大/最小值、按键连按、通信忙状态、显示格式", st['td_l']), Paragraph("关键边界不出错", st['td_l'])],
+        [Paragraph("最后20min", st['td']), Paragraph("重新生成bit，按比赛要求压缩工程包，上传前本地解压抽检", st['td_l']), Paragraph("最终ZIP提交包", st['td_l'])],
+    ]
+    t = Table(time_plan, colWidths=[2.4*cm, 7.4*cm, 5.2*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(table_caption(st, "考场时间分配建议"))
+    story.append(t)
+
+    zip_checks = [
+        [Paragraph("检查项", st['th']), Paragraph("要求", st['th']), Paragraph("为什么要查", st['th'])],
+        [Paragraph("格式", st['td']), Paragraph("发行版和提交包统一使用标准.zip格式", st['td_l']), Paragraph("Windows可直接打开，GitHub发布和比赛系统兼容性最好。", st['td_l'])],
+        [Paragraph("文件名", st['td']), Paragraph("比赛提交包按赛题命名；发布包用版本号，如v0.2.2.zip", st['td_l']), Paragraph("便于评测端识别，也便于自己回溯版本。", st['td_l'])],
+        [Paragraph("内容", st['td']), Paragraph("提交包按赛题包含工程；发布包包含PDF、MD、脚本、源码、题面和硬件资料索引", st['td_l']), Paragraph("不要把临时缓存、旧bit、无关个人文件混入最终包。", st['td_l'])],
+        [Paragraph("路径", st['td']), Paragraph("压缩包内使用相对路径，避免只在本机有效的绝对路径", st['td_l']), Paragraph("换电脑或评测环境后仍能解压阅读。", st['td_l'])],
+        [Paragraph("抽检", st['td']), Paragraph("上传前另建临时目录解压一次，确认PDF可打开、工程可识别、脚本可运行", st['td_l']), Paragraph("压缩成功不等于内容完整，最后一步必须抽检。", st['td_l'])],
+    ]
+    t = Table(zip_checks, colWidths=[2.5*cm, 7.1*cm, 5.4*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(table_caption(st, "ZIP压缩包检查单"))
+    story.append(t)
     story.append(PageBreak())
 
     story.append(Paragraph("赛场速查卡", st['ch_title']))
@@ -517,7 +551,7 @@ def build_toc(st):
 
     # TOC条目：key = chapter_pages中的key
     toc_items = [
-        ("front", "出版说明、速查卡、调试与计数清单", True),
+        ("front", "出版说明、速查卡、时间分配与调试清单", True),
         ("ch1",  "第一章  硬件平台概览", True),
         ("ch1_1","1.1  DP2026 FPGA竞赛实训平台", False),
         ("ch1_2","1.2  硬件资源配置", False),
