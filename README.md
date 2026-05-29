@@ -1,16 +1,16 @@
-# all_code
+# 蓝桥杯国一工程模板及零基础教学
 
-蓝桥杯 FPGA 学习与模拟测试项目仓库，包含 CT137X/AMD Xilinx 资料、Verilog 驱动与用户模块、真题模拟题、生成教材和提交结果。
+蓝桥杯 FPGA 设计与开发（AMD/Xilinx 平台）国一工程模板与零基础教学资源库，涵盖完整驱动库、真题解析、模拟赛代码和入门资料。
 
 ## 目录
 
-- `driver/`：可复用外设驱动模块。
-- `user/`：顶层应用逻辑与题目实现模块。
-- `study/`：学习和实验代码。
-- `title/`：板卡资料、题目文件、数据手册和工具。
-- `真题模拟题/`：真题、模拟题和提取图片。
-- `Aix_tools/`：项目阅读、教材生成、验证和自动同步工具。
-- `project/lanqiao-fpga-textbook/`：教材发布副本。
+- `driver/`：16 个可复用外设驱动模块（ADC/DAC/DS1302/EEPROM/IIC/LED/SEG/SPI/SRAM/UART/W25Q128 等）。
+- `user/`：顶层应用逻辑与题目实现模块（top/key_proc/led_proc/seg_proc/uart_parser 等）。
+- `study/`：零基础入门代码与参考资料（Verilog 入门、FPGA 大模板建立、竞赛规则等）。
+- `title/`：CT137X 竞赛平台资料、引脚表、数据手册和官方工具。
+- `真题模拟题/`：第十六/十七届省赛国赛真题、模拟题 PDF 及题目内容提取。
+- `Aix_tools/`：PDF 提取、教材生成、自动同步等辅助工具。
+- `project/lanqiao-fpga-textbook/`：教材发布副本（含生成的 PDF）。
 - `results/`：最终生成结果和可提交文件。
 
 ## GitHub 同步

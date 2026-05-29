@@ -5,3 +5,11 @@ Aix_tools/pdf_check/
 Aix_tools/git_watch_push.log
 Aix_tools/git_watch_push.pid
 project/lanqiao-fpga-textbook/.git/
+
+# 隐私保护：准考证号相关文件
+**/17444501*.pdf
+**/17444501*.bit
+**/17444501*.zip
+**/*准考证*
+**/*密码*
+code/Aixgeekx/
