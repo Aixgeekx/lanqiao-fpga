@@ -1101,10 +1101,42 @@ def add_exam_image(story, path, st):
     image_path = compressed_exam_image(path)
     with PILImage.open(image_path) as img:
         w, h = img.size
-    max_w, max_h = 16.2*cm, 21.5*cm
+    max_w, max_h = 15.8*cm, 20.8*cm
     scale = min(max_w / w, max_h / h)
-    story.append(RLImage(image_path, width=w*scale, height=h*scale))
-    story.append(Paragraph(os.path.basename(path), st['caption']))
+    img_flow = RLImage(image_path, width=w*scale, height=h*scale)
+    img_flow.hAlign = 'CENTER'
+    panel_w = min(17.0*cm, w*scale + 8*mm)
+    panel = Table([[img_flow]], colWidths=[panel_w])
+    panel.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), white),
+        ('BOX', (0,0), (-1,-1), 0.8, C['border']),
+        ('LEFTPADDING', (0,0), (-1,-1), 4*mm),
+        ('RIGHTPADDING', (0,0), (-1,-1), 4*mm),
+        ('TOPPADDING', (0,0), (-1,-1), 3*mm),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3*mm),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    ]))
+    story.append(panel)
+    story.append(Paragraph(f"源图：{os.path.basename(path)}", st['caption']))
+
+def add_exam_reading_guide(story, st):
+    story.append(Paragraph("扫描题面阅读规范", st['sub_title']))
+    story.append(Paragraph("扫描题面是本书保留原始试卷信息的依据。纸质训练时不要把它当作单纯截图，而要按固定符号快速标记：先圈硬件对象，再划状态和时序，最后写错因。这样做能把图片题面转化为可复盘的工程任务。", st['body']))
+    rows = [
+        [Paragraph("标记对象", st['th']), Paragraph("纸上动作", st['th']), Paragraph("转化成代码时看什么", st['th'])],
+        [Paragraph("硬件对象", st['td']), Paragraph("圈出LED、数码管、按键、UART、I2C、SPI、ADC、SRAM、Flash等名词", st['td_l']), Paragraph("对应顶层端口、XDC引脚、外设驱动实例。", st['td_l'])],
+        [Paragraph("时间要求", st['td']), Paragraph("给1s、20ms、0.2s、1kHz、115200等数字加框", st['td_l']), Paragraph("换算50MHz计数值，写成localparam。", st['td_l'])],
+        [Paragraph("状态/流程", st['td']), Paragraph("用箭头连接IDLE、设置、运行、报警、结束等流程词", st['td_l']), Paragraph("转成三段式FSM状态和跳转条件。", st['td_l'])],
+        [Paragraph("显示格式", st['td']), Paragraph("下划线标出小数点、空白、单位、闪烁、滚动等显示要求", st['td_l']), Paragraph("对应数码管位选、段选、BCD转换和刷新节拍。", st['td_l'])],
+        [Paragraph("提交要求", st['td']), Paragraph("最后单独写出工程名、压缩包格式和上传检查动作", st['td_l']), Paragraph("按ZIP检查单解压抽检，不把缓存和无关文件混入。", st['td_l'])],
+    ]
+    t = Table(rows, colWidths=[2.5*cm, 6.8*cm, 5.7*cm])
+    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    story.append(table_caption(st, "扫描题面阅读标记规范"))
+    story.append(t)
 
 def compressed_exam_image(path, max_width=1200, quality=78):
     marker = os.sep + "真题模拟题" + os.sep
@@ -1446,6 +1478,7 @@ SCL:       _|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_
         "本节把已提取的扫描题面逐页嵌入教材，便于离线复习和对照训练。扫描页主要来自四梯练习系统的个人练习结果解析，题型以客观选择题为主，覆盖FPGA基础、Verilog语法、组合/时序逻辑、复位、PLL、计数器、通信协议和外设应用。由于这些PDF没有可抽取文字层，本版采用原图保真嵌入，后续迭代会继续补充人工文字化解析。",
         "使用方法：先遮住正确答案独立作答，再对照页内答案；错题不要只记选项，要回到本章前面的协议、状态机和时序原理重新解释一遍。能够用自己的话解释错误原因，比单纯记住答案更接近赛场可迁移能力。"
     ], st)
+    add_exam_reading_guide(story, st)
 
     # ==================== 第17届省赛客观题逐题解析 ====================
     story.append(Paragraph("第17届省赛客观题逐题解析", st['sub_title']))
@@ -1505,10 +1538,11 @@ SCL:       _|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_
         story.append(PageBreak())
         story.append(Paragraph(safe_xml(exam_name), st['sec_title']))
         story.append(Paragraph(summaries.get(exam_name, "扫描题面页。"), st['desc_box']))
+        story.append(Paragraph("阅读动作：先用本节的标记规范圈出硬件对象和时间参数，再回到前面的协议、状态机、计数器和板卡资料章节查证。完成一套后，把错因写入“真题训练记录栏”。", st['tip']))
         for idx, img_path in enumerate(pages, 1):
             story.append(Paragraph(f"题面页 {idx}/{len(pages)}", st['sub_title']))
-            story.append(figure_caption(st, "题面页"))
             add_exam_image(story, img_path, st)
+            story.append(figure_caption(st, f"{safe_xml(exam_name)} 题面页 {idx}"))
             if idx != len(pages):
                 story.append(PageBreak())
     story.append(PageBreak())
@@ -1619,6 +1653,28 @@ def build_appendix(st):
         ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3),
     ]))
     story.append(table_caption(st, "官方资料依据速查"))
+    story.append(t)
+
+    story.append(Paragraph("官方资料查证路径", st['sec_title']))
+    story.append(Paragraph("出版稿和赛场手册最怕“凭印象写硬件”。遇到硬件事实不确定时，按下面顺序查证：先定板卡事实，再定芯片协议，最后回到代码和XDC。这样可以避免把网络资料、旧板卡经验或仿真假设误当成当前竞赛平台事实。", st['body']))
+    paths = [
+        [th("遇到的问题"), th("先查资料"), th("确认后落实到哪里")],
+        [td("端口或管脚不确定"), td("CT137X_PIN.pdf/xlsx"), td("顶层端口名、XDC PACKAGE_PIN、IOSTANDARD")],
+        [td("LED/数码管极性不确定"), td("CT137X_SCH.pdf + SEG_TABLE.pdf"), td("驱动是否取反、段码表、位选顺序和小数点位置")],
+        [td("I2C地址或数据格式不确定"), td("ADC081C021、DAC5571、AT24C02数据手册"), td("器件地址、寄存器地址、读写位、ACK等待和数据位切片")],
+        [td("RTC时间读写异常"), td("DS1302.PDF"), td("CH位、WP位、BCD格式、读写地址、三线IO方向")],
+        [td("SRAM读写不稳定"), td("IS63WV1288.pdf"), td("地址建立/保持、CE/OE/WE时序和双向数据总线控制")],
+        [td("Flash写入或擦除失败"), td("W25Q128.pdf"), td("WREN、WIP轮询、页编程、扇区擦除、3字节地址")],
+    ]
+    t = Table(paths, colWidths=[4*cm, 4.6*cm, 6.4*cm])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), C['primary']),
+        ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+    ]))
+    story.append(table_caption(st, "官方资料查证路径"))
     story.append(t)
 
     story.append(Paragraph("D. CT137X关键硬件事实", st['sec_title']))
