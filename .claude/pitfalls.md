@@ -35,3 +35,9 @@
 - **原因**：Git MCP 执行 hook 的环境 PATH 未包含本机 `git-lfs`，普通 PowerShell 中 `git lfs version` 正常。
 - **解决**：确认提交已存在、`git lfs status` 正常后继续使用普通 PowerShell 执行后续推送和发布校验。
 - **教训**：涉及 Git LFS 的仓库，若 Git MCP 提交报 hook 找不到 `git-lfs`，先检查提交是否已生成，再用当前 shell 验证 `git lfs status`，不要重复提交。
+
+### 2026-05-29 自动监视器提交错误 PDF 统计
+- **现象**：启动 `watch_and_push.ps1` 后，已有的错误统计 `31->32`、`135464->135580` 被自动提交并推送。
+- **原因**：监视器只检查 Git 改动并提交，没有在提交前验证 README 中的 PDF 统计是否来自实际 PDF。
+- **解决**：新增 `repair_pdf_stats.py`，监视器每轮提交前先按最终 PDF 文字层修正 README、教材说明和进度文件。
+- **教训**：自动推送脚本不能只做 `git add -A`，对生成物统计、版本号这类可校验元数据要先校验再提交。
