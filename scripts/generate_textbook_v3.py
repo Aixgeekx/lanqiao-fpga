@@ -60,8 +60,15 @@ def register_fonts():
             except: pass
 
 # ==================== 目录页码追踪 ====================
+# 章节书签定义：key -> (标题, 层级)
+BOOKMARK_TITLES = {
+    'front': ('前言', 0), 'ch1': ('第一章 硬件平台概览', 0), 'ch2': ('第二章 引脚约束与配置', 0),
+    'ch3': ('第三章 核心原理与真题实战', 0), 'ch4': ('第四章 Driver驱动模块详解', 0),
+    'ch5': ('第五章 User应用模块详解', 0), 'appendix': ('附录', 0),
+}
+
 class ChapterMarker(Flowable):
-    """插入章节标记，用于记录页码"""
+    """插入章节标记，用于记录页码和添加PDF书签"""
     def __init__(self, key, chapter_map):
         Flowable.__init__(self)
         self.key = key
@@ -70,6 +77,10 @@ class ChapterMarker(Flowable):
         self.height = 0
     def draw(self):
         self.chapter_map[self.key] = self.canv.getPageNumber()
+        if self.key in BOOKMARK_TITLES:
+            title, level = BOOKMARK_TITLES[self.key]
+            self.canv.bookmarkPage(self.key)
+            self.canv.addOutlineEntry(title, self.key, level=level, closed=False)
 
 chapter_pages = {}  # 全局页码记录
 table_counter = 0   # 表格编号计数器
@@ -97,7 +108,7 @@ def S():
     # 提示框
     s['tip'] = ParagraphStyle('TP', fontName='MSYH', fontSize=8, leading=12, textColor=HexColor('#744210'), backColor=C['warn_bg'], borderWidth=1, borderColor=C['warn_border'], borderPadding=6, spaceAfter=3*mm)
     # 代码
-    s['code'] = ParagraphStyle('CD', fontName='MapleMono-Italic', fontSize=6.5, leading=8.5, spaceAfter=0, spaceBefore=0, textColor=HexColor('#1a202c'))
+    s['code'] = ParagraphStyle('CD', fontName='MapleMono', fontSize=6.5, leading=8.5, spaceAfter=0, spaceBefore=0, textColor=C['code_fg'])
     # 表格
     s['th'] = ParagraphStyle('TH', fontName='SimHei', fontSize=8, textColor=white, alignment=TA_CENTER)
     s['td'] = ParagraphStyle('TD', fontName='MSYH', fontSize=7.5, textColor=C['text'], alignment=TA_CENTER)
@@ -116,6 +127,31 @@ def S():
     return s
 
 # ==================== 图表编号函数 ====================
+
+def code_block(text, st):
+    """生成带深色背景的代码块"""
+    code_pre = Preformatted(text, st['code'])
+    t = Table([[code_pre]], colWidths=[16.5*cm])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), C['code_bg']),
+        ('TOPPADDING', (0,0), (-1,-1), 6), ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('LEFTPADDING', (0,0), (-1,-1), 8), ('RIGHTPADDING', (0,0), (-1,-1), 8),
+        ('ROUNDEDCORNERS', [3, 3, 3, 3]),
+    ]))
+    return t
+
+def std_table_style(extra=None):
+    """标准表格样式：深蓝表头 + 交替行背景 + 边框"""
+    style = [
+        ('BACKGROUND', (0,0), (-1,0), C['primary']),
+        ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+    ]
+    if extra:
+        style.extend(extra)
+    return TableStyle(style)
 def next_table_num():
     global table_counter
     table_counter += 1
@@ -130,6 +166,11 @@ def table_caption(st, text):
     """生成带编号的表格标题"""
     num = next_table_num()
     return Paragraph(f"表 {num}  {text}", st['table_caption'])
+
+def captioned_table(st, table, caption_text):
+    """带标题的表格，KeepTogether防止标题和表格分离"""
+    cap = table_caption(st, caption_text)
+    return KeepTogether([cap, table])
 
 def figure_caption(st, text):
     """生成带编号的图片标题"""
@@ -173,6 +214,18 @@ class ChapterSideBar(Flowable):
     def draw(self):
         self.canv.setFillColor(self.color)
         self.canv.roundRect(0, 0, self.width, self.height, 1, fill=1, stroke=0)
+
+def chapter_title_block(title, st):
+    """带左侧彩色竖条的章节标题"""
+    sidebar = ChapterSideBar(height=12*mm, width=4*mm, color=C['primary'])
+    title_para = Paragraph(title, st['ch_title'])
+    t = Table([[sidebar, title_para]], colWidths=[6*mm, 15.4*cm])
+    t.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('LEFTPADDING', (0,0), (-1,-1), 0), ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+    ]))
+    return t
 
 class CoverFrame(Flowable):
     """封面装饰边框"""
@@ -282,7 +335,7 @@ def build_cover(st):
     story.append(Spacer(1, 8*mm))
     story.append(ColorBar(width=8*cm, colors=[C['accent'], C['secondary'], C['accent']]))
     story.append(Spacer(1, 8*mm))
-    story.append(Paragraph("纸质速查 · 零基础教学 · 出版预备版", ParagraphStyle('VT', fontName='MSYH', fontSize=13, alignment=TA_CENTER, textColor=C['text_light'])))
+    story.append(Paragraph("国一工程模板 · 零基础教学 · 赛场速查手册", ParagraphStyle('VT', fontName='MSYH', fontSize=13, alignment=TA_CENTER, textColor=C['text_light'])))
     story.append(Spacer(1, 1.5*cm))
     # 信息框
     box = ParagraphStyle('BOX', fontName='MSYH', fontSize=10, alignment=TA_CENTER, textColor=C['text'],
@@ -316,9 +369,7 @@ def build_front_matter(st):
         [Paragraph("硬件现象异常", st['td']), Paragraph("赛场速查卡、附录、电源/复位/消抖说明", st['td']), Paragraph("先排查极性、复位、时钟域和外设忙状态。", st['td_l'])],
     ]
     t = Table(guide, colWidths=[3*cm, 5.2*cm, 6.8*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 4), ('BOTTOMPADDING', (0,0), (-1,-1), 4)]))
+    t.setStyle(std_table_style([('TOPPADDING', (0,0), (-1,-1), 4), ('BOTTOMPADDING', (0,0), (-1,-1), 4)]))
     story.append(table_caption(st, "纸质使用建议"))
     story.append(t)
 
@@ -333,9 +384,7 @@ def build_front_matter(st):
         [Paragraph("D13-D14", st['td']), Paragraph("赛前压测和错题复盘", st['td_l']), Paragraph("按本书题面限时训练，记录错误原因和对应知识点。", st['td_l'])],
     ]
     t = Table(route, colWidths=[2.2*cm, 4.4*cm, 8.4*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "零基础14天学习路线"))
     story.append(t)
 
@@ -352,9 +401,7 @@ def build_front_matter(st):
         [Paragraph("最后20min", st['td']), Paragraph("重新生成bit，按比赛要求压缩工程包，上传前本地解压抽检", st['td_l']), Paragraph("最终ZIP提交包", st['td_l'])],
     ]
     t = Table(time_plan, colWidths=[2.4*cm, 7.4*cm, 5.2*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "考场时间分配建议"))
     story.append(t)
 
@@ -367,9 +414,7 @@ def build_front_matter(st):
         [Paragraph("抽检", st['td']), Paragraph("上传前另建临时目录解压一次，确认PDF可打开、工程可识别、脚本可运行", st['td_l']), Paragraph("压缩成功不等于内容完整，最后一步必须抽检。", st['td_l'])],
     ]
     t = Table(zip_checks, colWidths=[2.5*cm, 7.1*cm, 5.4*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "ZIP压缩包检查单"))
     story.append(t)
     story.append(PageBreak())
@@ -414,9 +459,7 @@ def build_front_matter(st):
         [Paragraph("7. 综合题", st['td']), Paragraph("输入采样、状态机、存储、算法、显示、串口分层验证", st['td_l']), Paragraph("先看状态编号，再看计数器边界，最后看数据格式化", st['td_l'])],
     ]
     t = Table(checks, colWidths=[2.5*cm, 6.2*cm, 6.3*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "赛场上板七步调试清单"))
     story.append(t)
 
@@ -432,9 +475,7 @@ def build_front_matter(st):
         [Paragraph("仿真正常板上偶发死机", st['td']), Paragraph("跨时钟域亚稳态、异步输入未同步、计数器边界遗漏", st['td_l']), Paragraph("给外部输入加两级同步器，状态跳转条件全部打一拍观察。", st['td_l'])],
     ]
     t = Table(faults, colWidths=[3.3*cm, 5.6*cm, 6.1*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "常见板上现象排查表"))
     story.append(t)
 
@@ -454,9 +495,7 @@ def build_front_matter(st):
         [Paragraph("偶发死机", st['td']), Paragraph("异步输入、跨时钟域、复位释放和计数边界是否安全", st['td_l']), Paragraph("外部输入先两级同步，复位统一释放，所有计数器检查N-1边界。", st['td_l'])],
     ]
     t = Table(flow, colWidths=[3.1*cm, 5.8*cm, 6.1*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    t.setStyle(std_table_style())
     flow_block.extend([table_caption(st, "上板故障定位流程"), t])
     story.append(KeepTogether(flow_block))
 
@@ -471,9 +510,7 @@ def build_front_matter(st):
         [Paragraph("LD8", st['td']), Paragraph("done_flag", st['td_l']), Paragraph("证明一次计算或发送流程已经闭环。", st['td_l'])],
     ]
     t = Table(probes, colWidths=[2.5*cm, 4.4*cm, 8.1*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "调试信号分配建议"))
     story.append(t)
     story.append(PageBreak())
@@ -492,9 +529,7 @@ def build_front_matter(st):
         [Paragraph("=", st['td']), Paragraph("阻塞赋值，按语句顺序立即生效", st['td_l']), Paragraph("组合always可用；不要在同一时序块里混用。", st['td_l'])],
     ]
     t = Table(synth, colWidths=[3*cm, 5.8*cm, 6.2*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "Verilog可综合写法速查"))
     story.append(t)
 
@@ -508,14 +543,12 @@ def build_front_matter(st):
         [Paragraph("仿真与板上不一致", st['td']), Paragraph("初值依赖、异步输入未同步、复位条件不完整", st['td_l']), Paragraph("所有关键寄存器写复位值，外部输入先同步。", st['td_l'])],
     ]
     t = Table(fixes, colWidths=[3.3*cm, 5.8*cm, 5.9*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "常见综合报错修正表"))
     story.append(t)
 
     story.append(Paragraph("赛场默认模板", st['sec_title']))
-    story.append(Preformatted("""// 时序逻辑：只在时钟沿更新，复位给确定初值
+    story.append(code_block("""// 时序逻辑：只在时钟沿更新，复位给确定初值
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         cnt <= 16'd0;
@@ -532,7 +565,7 @@ always @(*) begin
         WORK: if (done)  next_state = IDLE;
         default: next_state = IDLE;
     endcase
-end""", st['code']))
+end""", st))
     story.append(PageBreak())
 
     story.append(Paragraph("50MHz计数参数与定时器写法速查", st['ch_title']))
@@ -551,9 +584,7 @@ end""", st['code']))
         [Paragraph("1kHz PWM 10%", st['td']), Paragraph("周期1ms", st['td']), Paragraph("高5,000 / 周期50,000", st['td']), Paragraph("pwm_cnt < 5_000", st['td_l'])],
     ]
     t = Table(timing, colWidths=[3*cm, 2.6*cm, 4*cm, 5.4*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "50MHz常用计数参数表"))
     story.append(t)
 
@@ -562,7 +593,7 @@ end""", st['code']))
         "如果一个事件需要N个时钟周期，计数器通常从0数到N-1，因此比较值应写成N-1，而不是N。比如1ms需要50,000个周期，计数器取值范围是0到49,999；当cnt==49_999时产生tick并清零。",
         "位宽按最大计数值选择：1秒需要计到49,999,999，小于2^26，所以26位足够；20ms需要计到999,999，小于2^20，所以20位足够。为了赛场稳妥，参数可用localparam integer定义，寄存器位宽略宽一两位也可以。"
     ], st)
-    story.append(Preformatted("""localparam integer CLK_HZ = 50_000_000;
+    story.append(code_block("""localparam integer CLK_HZ = 50_000_000;
 localparam integer TICK_1MS = CLK_HZ / 1000;
 
 always @(posedge clk or negedge rst_n) begin
@@ -576,7 +607,7 @@ always @(posedge clk or negedge rst_n) begin
         cnt_1ms <= cnt_1ms + 1'b1;
         tick_1ms <= 1'b0;
     end
-end""", st['code']))
+end""", st))
     story.append(PageBreak())
     return story
 
@@ -888,15 +919,26 @@ def build_annotated_code(fname, content, st):
     chunk_size = 55
     for i in range(0, len(annotated), chunk_size):
         chunk = '\n'.join(annotated[i:i+chunk_size])
-        elements.append(Preformatted(chunk, st['code']))
+        code_pre = Preformatted(chunk, st['code'])
+        # 深色背景代码容器
+        t = Table([[code_pre]], colWidths=[16.5*cm])
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), C['code_bg']),
+            ('TOPPADDING', (0,0), (-1,-1), 6),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+            ('LEFTPADDING', (0,0), (-1,-1), 8),
+            ('RIGHTPADDING', (0,0), (-1,-1), 8),
+            ('ROUNDEDCORNERS', [3, 3, 3, 3]),
+        ]))
+        elements.append(t)
+        elements.append(Spacer(1, 2*mm))
     return elements
 
 # ==================== 硬件章节 ====================
 def build_chapter1(st):
     story = []
     story.append(ChapterMarker("ch1", chapter_pages))
-    story.append(Paragraph("第一章  硬件平台概览", st['ch_title']))
-    story.append(DecorLine())
+    story.append(chapter_title_block("第一章  硬件平台概览", st))
     story.append(Spacer(1, 3*mm))
 
     story.append(ChapterMarker("ch1_1", chapter_pages))
@@ -1022,8 +1064,7 @@ def build_chapter1(st):
 def build_chapter2(st):
     story = []
     story.append(ChapterMarker("ch2", chapter_pages))
-    story.append(Paragraph("第二章  引脚约束与配置", st['ch_title']))
-    story.append(DecorLine())
+    story.append(chapter_title_block("第二章  引脚约束与配置", st))
     story.append(Spacer(1, 3*mm))
 
     story.append(ChapterMarker("ch2_1", chapter_pages))
@@ -1043,7 +1084,7 @@ set_property -dict {PACKAGE_PIN B6 IOSTANDARD LVCMOS33} [get_ports {rst}]
 # 用户按键 (低有效)
 set_property -dict {PACKAGE_PIN M5 IOSTANDARD LVCMOS33} [get_ports {key[0]}]  # S1
 set_property -dict {PACKAGE_PIN M4 IOSTANDARD LVCMOS33} [get_ports {key[1]}]  # S2"""
-    story.append(Preformatted(xdc, st['code']))
+    story.append(code_block(xdc, st))
     story.append(Spacer(1, 3*mm))
 
     story.append(ChapterMarker("ch2_2", chapter_pages))
@@ -1171,9 +1212,7 @@ def add_exam_reading_guide(story, st):
         [Paragraph("提交要求", st['td']), Paragraph("最后单独写出工程名、压缩包格式和上传检查动作", st['td_l']), Paragraph("按ZIP检查单解压抽检，不把缓存和无关文件混入。", st['td_l'])],
     ]
     t = Table(rows, colWidths=[2.5*cm, 6.8*cm, 5.7*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "扫描题面阅读标记规范"))
     story.append(t)
 
@@ -1192,9 +1231,7 @@ def add_exam_annotation_template(story, st):
         [Paragraph("最大风险", st['td']), Paragraph("概念 / 时序 / 极性 / 接口 / 提交：__________", st['td_l']), Paragraph("写出一个最可能扣分点，训练后复盘验证。", st['td_l'])],
     ]
     t = Table(rows, colWidths=[2.4*cm, 6.8*cm, 5.8*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 4), ('BOTTOMPADDING', (0,0), (-1,-1), 4)]))
+    t.setStyle(std_table_style([('TOPPADDING', (0,0), (-1,-1), 4), ('BOTTOMPADDING', (0,0), (-1,-1), 4)]))
     story.append(table_caption(st, "真题纸面批注模板"))
     story.append(t)
 
@@ -1213,7 +1250,7 @@ def add_exam_annotation_template(story, st):
                            ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
     story.append(KeepTogether([table_caption(st, "真题批注完成检查"), t]))
 
-def compressed_exam_image(path, max_width=1200, quality=78):
+def compressed_exam_image(path, max_width=1200, quality=85):
     marker = os.sep + "真题模拟题" + os.sep
     base_dir = os.path.abspath(path).split(marker)[0]
     cache_dir = os.path.join(base_dir, "Aix_tools", "pdf_assets", "exam_images")
@@ -1259,9 +1296,7 @@ def add_17th_province_summary(story, st):
         [Paragraph("程序设计题", st['td']), Paragraph("串行工序控制器：IDLE、LOAD、PROCESS、INSPECT、UNLOAD、ERROR", st['td_l']), Paragraph("典型FSM综合题，核心是状态跳转、倒计时、ADC阈值、暂停恢复和显示映射。", st['td_l'])],
     ]
     t = Table(rows, colWidths=[2.6*cm, 7.2*cm, 5.2*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 4), ('BOTTOMPADDING', (0,0), (-1,-1), 4)]))
+    t.setStyle(std_table_style([('TOPPADDING', (0,0), (-1,-1), 4), ('BOTTOMPADDING', (0,0), (-1,-1), 4)]))
     story.append(table_caption(st, "第17届省赛题目摘要"))
     story.append(t)
     states = [
@@ -1275,9 +1310,7 @@ def add_17th_province_summary(story, st):
     ]
     story.append(Paragraph("程序设计题FSM速查", st['sub_title']))
     t = Table(states, colWidths=[2.4*cm, 5.8*cm, 6.8*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "程序设计题FSM速查"))
     story.append(t)
 
@@ -1293,9 +1326,7 @@ def add_exam_training_index(story, st):
         [Paragraph("十七届模拟I/II/III", st['td']), Paragraph("同步复位、有符号位宽、always敏感列表、外设控制、综合常识", st['td_l']), Paragraph("第三章设计方法、第四章驱动源码", st['td_l'])],
     ]
     t = Table(rows, colWidths=[3.3*cm, 6.7*cm, 5*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "真题训练索引与错题复盘"))
     story.append(t)
 
@@ -1344,9 +1375,7 @@ def add_exam_training_index(story, st):
     ]
     story.append(Paragraph("错题复盘模板", st['sub_title']))
     t = Table(review, colWidths=[2.6*cm, 5.4*cm, 7*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "错题复盘模板"))
     story.append(t)
 
@@ -1363,9 +1392,7 @@ def add_16th_national_summary(story, st):
         [Paragraph("串口", st['td']), Paragraph("115200/8N1字符串输出；录入数据和算法结果带时间戳", st['td_l']), Paragraph("先把结果格式化为ASCII缓冲区，再由uart_string_sender逐字节发送。", st['td_l'])],
     ]
     t = Table(overview, colWidths=[2.3*cm, 6.3*cm, 6.4*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "第16届国赛模块与要求"))
     story.append(t)
 
@@ -1379,9 +1406,7 @@ def add_16th_national_summary(story, st):
         [Paragraph("RESET", st['td']), Paragraph("全局复位", st['td_l']), Paragraph("全局复位", st['td_l']), Paragraph("恢复初始状态，界面回录入界面。", st['td_l'])],
     ]
     t = Table(keys, colWidths=[1.6*cm, 4.4*cm, 4.4*cm, 4.6*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "界面与按键功能速查"))
     story.append(t)
 
@@ -1395,9 +1420,7 @@ def add_16th_national_summary(story, st):
         [Paragraph("归一化", st['td']), Paragraph("S4计算完成", st['td_l']), Paragraph("[时间戳][A4][0.xx结果序列]", st['td_l']), Paragraph("定点放大100倍实现两位小数。", st['td_l'])],
     ]
     t = Table(uart, colWidths=[2.2*cm, 3*cm, 5.4*cm, 4.4*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "串口上报格式"))
     story.append(t)
 
@@ -1411,8 +1434,7 @@ def add_16th_national_summary(story, st):
 def build_chapter3(st, base_dir=None):
     story = []
     story.append(ChapterMarker("ch3", chapter_pages))
-    story.append(Paragraph("第三章  核心原理与真题实战", st['ch_title']))
-    story.append(DecorLine())
+    story.append(chapter_title_block("第三章  核心原理与真题实战", st))
     story.append(Spacer(1, 3*mm))
 
     story.append(ChapterMarker("ch3_1", chapter_pages))
@@ -1425,7 +1447,7 @@ def build_chapter3(st, base_dir=None):
         "机械按键不是理想开关，按下和松开时金属触点会抖动，持续时间通常为几毫秒到十几毫秒。如果直接用50MHz采样，一个按键动作可能被识别成很多次。常见做法是先分频到100Hz或50Hz，相当于每10ms或20ms采样一次；只有相邻采样值稳定变化时，才输出一个系统可识别的单周期按下脉冲。"
     ], st)
     story.append(Paragraph("三段式状态机模板", st['sub_title']))
-    story.append(Preformatted("""// 1. 当前状态寄存器：只在时钟边沿更新
+    story.append(code_block("""// 1. 当前状态寄存器：只在时钟边沿更新
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) state <= IDLE;
     else        state <= next_state;
@@ -1443,7 +1465,7 @@ end
 // 3. 输出逻辑：把控制信号集中在状态含义里
 always @(*) begin
     wr_en = (state == WORK);
-end""", st['code']))
+end""", st))
 
     story.append(ChapterMarker("ch3_2", chapter_pages))
     story.append(Paragraph("3.2  I2C/UART/SPI通信协议", st['sec_title']))
@@ -1453,18 +1475,18 @@ end""", st['code']))
         "一次I2C传输从起始条件开始：SCL保持高电平时，SDA从高变低。随后主机发送7位地址和1位读写方向位，方向位为0表示写，为1表示读。每发送8位数据后，第9个时钟是应答位，接收方把SDA拉低表示ACK；如果SDA保持高电平，则表示NACK，通常代表器件不存在、忙或不接受更多数据。",
         "I2C时序最容易错的地方是SDA变化时机。规则是：SCL高电平期间SDA必须稳定，SCL低电平期间才允许改变数据；只有起始和停止条件例外。因此驱动中通常在SCL低电平的1/4周期更新SDA，在SCL高电平的3/4周期采样SDA。"
     ], st)
-    story.append(Preformatted("""I2C字节传输：
+    story.append(code_block("""I2C字节传输：
 SDA: START A6 A5 A4 A3 A2 A1 A0 R/W ACK D7 ... D0 ACK STOP
 SCL:       _|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_
-规则：SCL高电平采样，SCL低电平改变SDA。""", st['code']))
+规则：SCL高电平采样，SCL低电平改变SDA。""", st))
     story.append(Paragraph("UART协议", st['sub_title']))
     add_paras(story, [
         "UART是异步串口，没有专用时钟线，发送端和接收端必须约定同一个波特率。常见配置115200/8N1表示每秒115200个符号，8个数据位，无校验位，1个停止位。线路空闲为高电平，一帧数据以低电平起始位开始，随后按低位在前发送8位数据，最后用高电平停止位结束。",
         "在50MHz系统时钟下，115200波特率对应的计数值约为50_000_000 / 115200 = 434。发送模块每计满434个系统时钟切换到下一位；接收模块检测到下降沿后，先等半个波特周期在起始位中间确认，再每隔一个波特周期采样数据位，这样能避开边沿抖动。"
     ], st)
-    story.append(Preformatted("""UART 8N1帧：
+    story.append(code_block("""UART 8N1帧：
 空闲  起始位  bit0 bit1 bit2 bit3 bit4 bit5 bit6 bit7  停止位
-  1      0      LSB ---------------------------> MSB     1""", st['code']))
+  1      0      LSB ---------------------------> MSB     1""", st))
     story.append(Paragraph("SPI协议", st['sub_title']))
     add_paras(story, [
         "SPI是主从式同步总线，主机控制CS片选和SCLK时钟，MOSI负责主机到从机，MISO负责从机到主机。和UART不同，SPI每一位都跟随SCLK边沿移动，因此速率可以更高，时序也更直接。标准SPI在发送MOSI的同时采样MISO，所以天然支持全双工。",
@@ -1589,9 +1611,7 @@ SCL:       _|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_|‾|_
         [Paragraph("LED指示", st['td']), Paragraph("LD1-LD5各对应一个工序，LD6在ERROR时0.2s闪烁", st['td_l']), Paragraph("LD6用10M周期计数器翻转", st['td_l'])],
     ]
     t = Table(design_rows, colWidths=[2.5*cm, 5.5*cm, 6*cm])
-    t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), C['primary']), ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-                           ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                           ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3)]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "17届省赛设计题关键实现要素"))
     story.append(t)
 
@@ -1629,8 +1649,7 @@ def build_code_chapter(title, files, ch_num, st):
     story = []
     key = f"ch{ch_num}"
     story.append(ChapterMarker(key, chapter_pages))
-    story.append(Paragraph(title, st['ch_title']))
-    story.append(DecorLine())
+    story.append(chapter_title_block(title, st))
     story.append(Spacer(1, 3*mm))
 
     for idx, (fname, content) in enumerate(files, 1):
@@ -1672,13 +1691,7 @@ def build_appendix(st):
         [td("写保护"), td("0x8E"), td("0x8F"), td("bit7=WP, 0=可写")],
     ]
     t = Table(ds, colWidths=[2.5*cm, 2*cm, 2*cm, 5.5*cm])
-    t.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), C['primary']),
-        ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-        ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-    ]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "DS1302寄存器地址表"))
     story.append(t)
     story.append(Spacer(1, 5*mm))
@@ -1694,13 +1707,7 @@ def build_appendix(st):
         [td("0x9F"), td("Read JEDEC ID"), td("命令+3字节返回")],
     ]
     t = Table(fl, colWidths=[2*cm, 4*cm, 6*cm])
-    t.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), C['primary']),
-        ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-        ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-    ]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "W25Q128 SPI命令表"))
     story.append(t)
 
@@ -1721,13 +1728,7 @@ def build_appendix(st):
         [td("W25Q128.pdf"), td("SPI Flash数据手册"), td("0x9F/0x06/0x05/0x03/0x02/0x20命令")],
     ]
     t = Table(docs, colWidths=[3.6*cm, 4.1*cm, 7.2*cm])
-    t.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), C['primary']),
-        ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-        ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-    ]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "官方资料依据速查"))
     story.append(t)
 
@@ -1743,13 +1744,7 @@ def build_appendix(st):
         [td("Flash写入或擦除失败"), td("W25Q128.pdf"), td("WREN、WIP轮询、页编程、扇区擦除、3字节地址")],
     ]
     t = Table(paths, colWidths=[4*cm, 4.6*cm, 6.4*cm])
-    t.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), C['primary']),
-        ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-        ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-    ]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "官方资料查证路径"))
     story.append(t)
 
@@ -1767,13 +1762,7 @@ def build_appendix(st):
         [td("Flash"), td("W25Q128用户Flash使用CS=D12、SCK=D13、IO0=G14、IO1=F14、IO2=F13、IO3=E13")],
     ]
     t = Table(facts, colWidths=[3.2*cm, 11.5*cm])
-    t.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), C['primary']),
-        ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-        ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-    ]))
+    t.setStyle(std_table_style())
     story.append(table_caption(st, "CT137X关键硬件事实"))
     story.append(t)
 
@@ -1805,13 +1794,7 @@ def build_appendix(st):
         [td("非阻塞赋值"), td("Non-blocking (<="), td("时序逻辑中使用，时钟沿统一更新")],
     ]
     t = Table(glossary, colWidths=[3*cm, 3.5*cm, 8.5*cm])
-    t.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), C['primary']),
-        ('GRID', (0,0), (-1,-1), 0.5, C['border']),
-        ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,0), (-1,-1), 2), ('BOTTOMPADDING', (0,0), (-1,-1), 2),
-    ]))
+    t.setStyle(std_table_style([('TOPPADDING', (0,0), (-1,-1), 2), ('BOTTOMPADDING', (0,0), (-1,-1), 2)]))
     story.append(table_caption(st, "FPGA\u672f\u8bed\u901f\u67e5"))
     story.append(t)
     story.append(Spacer(1, 5*mm))
@@ -1915,7 +1898,11 @@ def main():
 
     doc2 = SimpleDocTemplate(output_path, pagesize=A4,
                              leftMargin=1.5*cm, rightMargin=1.5*cm,
-                             topMargin=2*cm, bottomMargin=2.5*cm)
+                             topMargin=2*cm, bottomMargin=2.5*cm,
+                             title="蓝桥杯FPGA开发教程 - 国一工程模板与零基础教学",
+                             author="Aix，极道工作室",
+                             subject="蓝桥杯FPGA设计与开发竞赛教程",
+                             keywords="蓝桥杯 FPGA Verilog CT137X 国一工程模板")
     doc2.build(final_story, onFirstPage=cover_header_footer, onLaterPages=header_footer)
 
     # 清理临时文件
