@@ -1177,7 +1177,6 @@ def add_exam_training_index(story, st):
     story.append(table_caption(st, "真题模拟题训练顺序"))
     story.append(t)
 
-    story.append(Paragraph("训练记录栏", st['sub_title']))
     record = [
         [Paragraph("日期", st['th']), Paragraph("题组", st['th']), Paragraph("正确率/完成度", st['th']), Paragraph("最大问题", st['th']), Paragraph("回看章节", st['th'])],
         [Paragraph("____", st['td']), Paragraph("____", st['td']), Paragraph("____", st['td']), Paragraph("____", st['td']), Paragraph("____", st['td'])],
@@ -1189,8 +1188,11 @@ def add_exam_training_index(story, st):
                            ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
                            ('ALIGN', (0,1), (-1,-1), 'CENTER'), ('TOPPADDING', (0,0), (-1,-1), 5),
                            ('BOTTOMPADDING', (0,0), (-1,-1), 5)]))
-    story.append(table_caption(st, "真题训练记录栏"))
-    story.append(t)
+    story.append(KeepTogether([
+        Paragraph("训练记录栏", st['sub_title']),
+        table_caption(st, "真题训练记录栏"),
+        t,
+    ]))
 
     review = [
         [Paragraph("错因", st['th']), Paragraph("典型表现", st['th']), Paragraph("修正动作", st['th'])],
@@ -1614,6 +1616,64 @@ def build_appendix(st):
 
     # ==================== 参考文献 ====================
     story.append(Spacer(1, 8*mm))
+
+    # ==================== FPGA术语速查 ====================
+    story.append(Paragraph("E. FPGA术语速查", st['sec_title']))
+    glossary = [
+        [th("术语"), th("英文"), th("简要解释")],
+        [td("可编程逻辑块"), td("CLB"), td("FPGA基本逻辑单元，包含LUT和触发器")],
+        [td("查找表"), td("LUT"), td("实现组合逻辑的基本结构，常见4输入或6输入")],
+        [td("触发器"), td("FF / Flip-Flop"), td("时序逻辑基本单元，每个CLB内含2个")],
+        [td("块RAM"), td("BRAM"), td("片上存储器，用于FIFO、查找表等")],
+        [td("时钟管理单元"), td("CMT / MMCM / PLL"), td("时钟倍频、分频和相移调整")],
+        [td("可编程IO"), td("IOB"), td("FPGA引脚单元，支持LVCMOS33等多种电平")],
+        [td("综合"), td("Synthesis"), td("Verilog代码→门级网表的转换过程")],
+        [td("布局布线"), td("Place & Route"), td("将综合结果映射到FPGA具体资源并连线")],
+        [td("比特流"), td("Bitstream"), td("最终下载到FPGA的配置文件，.bit格式")],
+        [td("异步复位"), td("Async Reset"), td("复位信号立即生效，不等时钟沿")],
+        [td("同步复位"), td("Sync Reset"), td("复位信号需在时钟沿到来时才生效")],
+        [td("亚稳态"), td("Metastability"), td("触发器采样边沿附近变化时的不确定状态")],
+        [td("两级同步器"), td("2-FF Synchronizer"), td("解决跨时钟域亚稳态的标准方法")],
+        [td("状态机"), td("FSM"), td("控制逻辑的核心结构，贵在三段式写法")],
+        [td("阻塞赋值"), td("Blocking (=)"), td("组合逻辑中使用，立即生效")],
+        [td("非阻塞赋值"), td("Non-blocking (<="), td("时序逻辑中使用，时钟沿统一更新")],
+    ]
+    t = Table(glossary, colWidths=[3*cm, 3.5*cm, 8.5*cm])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), C['primary']),
+        ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,0), (-1,-1), 2), ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+    ]))
+    story.append(table_caption(st, "FPGA\u672f\u8bed\u901f\u67e5"))
+    story.append(t)
+    story.append(Spacer(1, 5*mm))
+
+    # ==================== 常见Verilog错误速查 ====================
+    story.append(Paragraph("F. 常见Verilog错误与修正", st['sec_title']))
+    err_rows = [
+        [th("错误写法"), th("正确写法"), th("原因")],
+        [td("always @(posedge clk) a = b;"), td("always @(posedge clk) a <= b;"), td("时序块必须用非阻塞赋值")],
+        [td("always @(*) a <= b;"), td("always @(*) a = b;"), td("组合块必须用阻塞赋值")],
+        [td("assign a = b + 1; (a是reg)"), td("wire a; assign a = b+1;"), td("assign只能驱动wire")],
+        [td("reg a; always @(*) a = in;"), td("wire a; assign a = in;"), td("简单赋值用assign更清晰")],
+        [td("always @(posedge clk) if(rst) ..."), td("always @(posedge clk or negedge rst_n) if(!rst_n) ..."), td("异步复位需加入敏感列表")],
+        [td("case 缺少 default"), td("case ... default: ... endcase"), td("综合器会生成销存器")],
+        [td("for (i=0; i<8; i=i+1) ..."), td("generate for ... endgenerate"), td("for循环在always外需用generate")],
+    ]
+    t = Table(err_rows, colWidths=[5*cm, 5.5*cm, 4.5*cm])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), C['primary']),
+        ('GRID', (0,0), (-1,-1), 0.5, C['border']),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, C['card_bg']]),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,0), (-1,-1), 2), ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+        ('FONTSIZE', (0,0), (-1,-1), 7),
+    ]))
+    story.append(table_caption(st, "常见Verilog错误与修正"))
+    story.append(t)
+
     story.append(Paragraph("参考文献", st['sec_title']))
     refs = [
         "1. Xilinx. 7 Series FPGAs Data Sheet: Overview (DS180).",

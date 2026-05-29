@@ -14,13 +14,14 @@
 - `release_version.ps1`：读取 `VERSION` 或指定版本号，创建 `vX.Y.Z` Git 标签并推送到远程仓库。
 - `patch_table_numbers.py`：一次性补丁工具，用于给教材生成脚本增加图表编号相关函数和样式。
 - `patch_exam_analysis.py`：一次性补丁工具，用于把真题结构化解析段落插入教材生成脚本。
+- `patch_glossary.py`：一次性补丁工具草案，用于向附录插入 FPGA 术语速查和常见 Verilog 错误速查。
 
 ## 当前 PDF 状态
 
 - 输出文件：`results/蓝桥杯FPGA开发教程_详细注释版.pdf`
-- 当前规模：116 页，约 7.0 MB，正文可抽取字符 133807 个。
+- 当前规模：117 页，约 7.0 MB，正文可抽取字符 134462 个。
 - 题面素材：已嵌入 9 组真题/模拟题，共 46 页图片，均经过 JPEG 缓存压缩。
-- 最近验证：`python -m py_compile Aix_tools/generate_textbook_v3.py` 与 `python Aix_tools/generate_textbook_v3.py` 均通过；关键字命中“零基础14天学习路线”“赛场上板调试清单”“Verilog综合规则与赛场写法清单”“50MHz计数参数与定时器写法速查”“50MHz常用计数参数表”“Vivado工程创建流程”“真题训练索引与错题复盘表”“错题复盘模板”“官方资料依据速查”。
+- 最近验证：`python -m py_compile Aix_tools/generate_textbook_v3.py` 与 `python Aix_tools/generate_textbook_v3.py` 均通过；关键字命中“零基础14天学习路线”“赛场上板调试清单”“Verilog综合规则与赛场写法清单”“50MHz计数参数与定时器写法速查”“真题模拟题训练顺序”“真题训练记录栏”“真题训练索引与错题复盘表”“错题复盘模板”“官方资料依据速查”。
 
 ## 真题分析辅助文件
 
