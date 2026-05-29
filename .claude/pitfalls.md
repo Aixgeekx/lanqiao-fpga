@@ -29,3 +29,9 @@
 - **原因**：46 张扫描题面 PNG 原图直接嵌入 ReportLab，两遍构建同时保留大量图片对象，内存占用过高。
 - **解决**：新增 `compressed_exam_image()`，先把题面 PNG 压缩为 JPEG 缓存到 `Aix_tools/pdf_assets/exam_images`，再嵌入 PDF；第一遍构建后删除 `content_story`、`doc1` 并执行 `gc.collect()`。
 - **教训**：教材生成包含大量扫描页时，必须先建立压缩缓存，再进入两遍页码生成流程，不能直接把原始大图塞进 story。
+
+### 2026-05-29 Git MCP 提交触发 Git LFS hook PATH 问题
+- **现象**：通过 Git MCP 提交时，`.git/hooks/post-commit` 报 `git-lfs was not found on your path`，但提交本身已经生成。
+- **原因**：Git MCP 执行 hook 的环境 PATH 未包含本机 `git-lfs`，普通 PowerShell 中 `git lfs version` 正常。
+- **解决**：确认提交已存在、`git lfs status` 正常后继续使用普通 PowerShell 执行后续推送和发布校验。
+- **教训**：涉及 Git LFS 的仓库，若 Git MCP 提交报 hook 找不到 `git-lfs`，先检查提交是否已生成，再用当前 shell 验证 `git lfs status`，不要重复提交。
